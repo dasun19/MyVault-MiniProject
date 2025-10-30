@@ -60,7 +60,7 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
   const commonFields = [
     { key: 'fullName', label: 'Full Name' },
     { key: 'dateOfBirth', label: 'Date of Birth' },
-    { key: 'hash', label: 'Security Hash' },
+    
   ];
 
   if ('idNumber' in cardData) {
@@ -142,6 +142,11 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
     if (selectedFields[key] && cardData[key as keyof DocumentData]) {
       data[key] = cardData[key as keyof DocumentData];
     }
+  }
+
+  // ALWAYS ADD HASH — even if not in UI
+  if (cardData.hash) {
+    data.hash = cardData.hash;
   }
 
   let payload: string;
