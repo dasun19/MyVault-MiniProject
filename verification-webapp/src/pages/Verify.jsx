@@ -64,41 +64,52 @@ export default function Verify() {
     });
   }, [encoded]);
 
-  // 4. Decrypt handler
-  const decrypt = async () => {
-    if (!passkey) return alert('Enter the 12-character passkey');
-    if (passkey.length !== 12) return alert('Passkey must be exactly 12 characters');
+  // 4. Decrypt handler - FIXED
+const decrypt = async () => {
+  if (!passkey) return alert('Enter the 12-character passkey');
+  if (passkey.length !== 12) return alert('Passkey must be exactly 12 characters');
 
-    setUi((s) => ({ ...s, decrypting: true }));
+  setUi((s) => ({ ...s, decrypting: true }));
 
-    try {
-      const key = CryptoJS.enc.Utf8.parse(passkey.padEnd(16, '0'));
-      const bytes = CryptoJS.AES.decrypt(ui.payload, key, {
-        mode: CryptoJS.mode.ECB,
-        padding: CryptoJS.pad.Pkcs7,
-      });
+  try {
+    // Step 1: Reconstruct the CryptoJS ciphertext from Base64URL
+    let ciphertextBase64 = ui.payload; // This is already base64url-encoded string from QR
+    ciphertextBase64 = ciphertextBase64.replace(/-/g, '+').replace(/_/g, '/');
+    while (ciphertextBase64.length % 4) ciphertextBase64 += '=';
 
-      const jsonString = bytes.toString(CryptoJS.enc.Utf8);
-      if (!jsonString) throw new Error('Empty payload');
+    // Step 2: This is the CRITICAL FIX
+    // The mobile app did: btoa(CryptoJS.encrypt(...).toString())
+    // So we need to undo that: atob() → then feed into CryptoJS
+    const encryptedBase64 = atob(ciphertextBase64); // Now we have CryptoJS's .toString() output
 
-      const data = JSON.parse(jsonString);
-      console.log('Decrypted data:', data);
+    // Step 3: Use CryptoJS to parse and decrypt
+    const key = CryptoJS.enc.Utf8.parse(passkey.padEnd(16, '0'));
+    const decrypted = CryptoJS.AES.decrypt(encryptedBase64, key, {
+      mode: CryptoJS.mode.ECB,
+      padding: CryptoJS.pad.Pkcs7,
+    });
 
-      setUi((prev) => ({
-        ...prev,
-        data,
-        decrypted: true,
-        encrypted: false,
-        decrypting: false,
-        isValid: null, // ✅ ensures effect runs
-        verificationError: null,
-      }));
-    } catch {
-      alert('Wrong passkey – try again');
-      setUi((s) => ({ ...s, decrypting: false }));
-    }
-  };
+    const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
+    if (!jsonString) throw new Error('Decryption failed or wrong passkey');
 
+    const data = JSON.parse(jsonString);
+    console.log('Decrypted data:', data);
+
+    setUi((prev) => ({
+      ...prev,
+      data,
+      decrypted: true,
+      encrypted: false,
+      decrypting: false,
+      isValid: null,
+      verificationError: null,
+    }));
+  } catch (err) {
+    console.error('Decryption error:', err);
+    alert('Wrong passkey – try again');
+    setUi((s) => ({ ...s, decrypting: false }));
+  }
+};
   // 5. Blockchain verification function
 const verifyHashOnChain = async (hash) => {
   try {
