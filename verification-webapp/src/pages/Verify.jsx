@@ -3,9 +3,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CryptoJS from 'crypto-js';
 
-
 // 1. Base64-URL → normal Base64 (same as mobile)
-
 const fromBase64Url = (str) => {
   str = decodeURIComponent(str);
   str = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -13,9 +11,7 @@ const fromBase64Url = (str) => {
   return str;
 };
 
-
 // 2. Main Component
-
 export default function Verify() {
   const [searchParams] = useSearchParams();
   const encoded = searchParams.get('data');
@@ -37,7 +33,6 @@ export default function Verify() {
   const [passkey, setPasskey] = useState('');
 
   // 3. Initial decode (plain or encrypted)
-  
   useEffect(() => {
     if (!encoded) {
       setUi({ loading: false, error: 'No data in QR code' });
@@ -70,12 +65,11 @@ export default function Verify() {
   }, [encoded]);
 
   // 4. Decrypt handler
-  
   const decrypt = async () => {
     if (!passkey) return alert('Enter the 12-character passkey');
     if (passkey.length !== 12) return alert('Passkey must be exactly 12 characters');
 
-    setUi(s => ({ ...s, decrypting: true }));
+    setUi((s) => ({ ...s, decrypting: true }));
 
     try {
       const key = CryptoJS.enc.Utf8.parse(passkey.padEnd(16, '0'));
@@ -88,56 +82,83 @@ export default function Verify() {
       if (!jsonString) throw new Error('Empty payload');
 
       const data = JSON.parse(jsonString);
-      setUi({
-        ...ui,
+      console.log('Decrypted data:', data);
+
+      setUi((prev) => ({
+        ...prev,
         data,
         decrypted: true,
         encrypted: false,
         decrypting: false,
-      });
+        isValid: null, // ✅ ensures effect runs
+        verificationError: null,
+      }));
     } catch {
       alert('Wrong passkey – try again');
-      setUi(s => ({ ...s, decrypting: false }));
+      setUi((s) => ({ ...s, decrypting: false }));
     }
   };
 
-  
-  // 5. Blockchain verification
-  
-  const verifyHashOnChain = async (hash) => {
-    try {
-      const resp = await fetch(
-        `https://your-blockchain-api.com/verify?hash=${encodeURIComponent(hash)}`
-      );
-      const result = await resp.json();
-      return { isValid: !!result.found, error: null };
-    } catch (e) {
-      console.error(e);
-      return { isValid: false, error: 'Blockchain service unavailable' };
+  // 5. Blockchain verification function
+const verifyHashOnChain = async (hash) => {
+  try {
+    // Ensure hash has 0x prefix and is 64 hex chars
+    let cleanHash = hash.trim();
+    if (!cleanHash.startsWith('0x')) cleanHash = '0x' + cleanHash;
+    if (!/^0x[0-9a-fA-F]{64}$/.test(cleanHash)) {
+      return { isValid: false, error: 'Invalid hash format' };
     }
-  };
 
-  
-  // 6. Run verification after data is ready
+    console.log('Verifying hash:', cleanHash);
+    const resp = await fetch(`http://localhost:3000/verify/${encodeURIComponent(cleanHash)}`);
+    const result = await resp.json();
+    console.log('Verification result:', result);
 
+    if (resp.ok) {
+      return { isValid: !!result.exists, error: null };
+    } else {
+      return { isValid: false, error: result.error || 'Verification failed' };
+    }
+  } catch (e) {
+    console.error('Verification error:', e);
+    return { isValid: false, error: 'Blockchain service unavailable' };
+  }
+};
+
+  // ✅ 6. Fixed verification useEffect
   useEffect(() => {
-    if (!ui.data || ui.isValid !== null) return;
+    console.log('Verification useEffect triggered:', ui.data, ui.isValid);
+
+    // FIXED CONDITION 👇
+    if (!ui.data || ui.isValid != null) return;
 
     const run = async () => {
-      setUi(s => ({ ...s, verifying: true, verificationError: null }));
-      const { isValid, error } = await verifyHashOnChain(ui.data.hash);
-      setUi(s => ({
-        ...s,
-        verifying: false,
-        isValid,
-        verificationError: error,
-      }));
+      try {
+        const hash = ui.data.hash;
+        console.log('Running verifyHashOnChain with:', hash);
+
+        setUi((s) => ({ ...s, verifying: true, verificationError: null }));
+        const { isValid, error } = await verifyHashOnChain(hash);
+        setUi((s) => ({
+          ...s,
+          verifying: false,
+          isValid,
+          verificationError: error,
+        }));
+      } catch (err) {
+        console.error('Verification failed:', err);
+        setUi((s) => ({
+          ...s,
+          verifying: false,
+          verificationError: err.message,
+        }));
+      }
     };
+
     run();
   }, [ui.data, ui.isValid]);
 
   // 7. UI Rendering
-  
   if (ui.loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -158,13 +179,10 @@ export default function Verify() {
     );
   }
 
-  // Encrypted: Show passkey input
   if (ui.encrypted) {
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-        <h2 className="text-2xl font-bold text-orange-600 mb-4">
-          Encrypted Document
-        </h2>
+        <h2 className="text-2xl font-bold text-orange-600 mb-4">Encrypted Document</h2>
         <p className="mb-4">Enter the 12-character passkey:</p>
 
         <input
@@ -188,11 +206,8 @@ export default function Verify() {
     );
   }
 
-  // Document View (plain or decrypted)
   if (ui.plain || ui.decrypted) {
     const data = ui.data;
-
-    // Human-readable labels
     const labels = {
       fullName: 'Full Name',
       dateOfBirth: 'Date of Birth',
@@ -206,58 +221,34 @@ export default function Verify() {
       vehicleClasses: 'Vehicle Classes',
     };
 
-    // *** NEW: Download PDF Function ***
     const downloadPDF = async () => {
       const { jsPDF } = await import('jspdf');
       const doc = new jsPDF('p', 'mm', 'a4');
-
-      // Load logo
       try {
         const logoResp = await fetch('/logo.png');
         const logoBlob = await logoResp.blob();
         const logoImg = URL.createObjectURL(logoBlob);
-
-        // Logo (top-left, small)
         doc.addImage(logoImg, 'PNG', 15, 15, 25, 25);
         URL.revokeObjectURL(logoImg);
-      } catch {
-        // Fallback if no logo
-      }
+      } catch {}
 
-      // Title
       doc.setFontSize(15);
       doc.setFont(undefined, 'bold');
       doc.text('MyVault-Verify', 50, 28, { align: 'left' });
-      
 
-      // Validity Badge
       const validityY = 70;
       doc.setFontSize(16);
       doc.setDrawColor(ui.isValid ? 34 : 220, ui.isValid ? 197 : 53, ui.isValid ? 94 : 20);
       doc.setFillColor(ui.isValid ? 236 : 254, ui.isValid ? 252 : 242, ui.isValid ? 231 : 226);
       doc.roundedRect(20, validityY - 5, 170, 20, 3, 3, 'FD');
-      
       doc.setFontSize(20);
       doc.setFont(undefined, 'bold');
       doc.text(ui.isValid ? 'Verified Document' : 'Unverified Document', 105, validityY + 8, { align: 'center' });
-      
-      // doc.setFontSize(12);
-      // doc.setFont(undefined, 'normal');
-      // doc.text(
-      //   ui.isValid ? 'Document is authentic' : 'Document not found on blockchain', 
-      //   105, validityY + 18, 
-      //   { align: 'center' }
-      // );
 
-      // Document Type
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
-      doc.text(
-        `${'licenseNumber' in data ? 'DRIVING LICENSE' : 'National Identity CARD'}`, 
-        30, validityY + 45
-      );
+      doc.text(`${'licenseNumber' in data ? 'DRIVING LICENSE' : 'National Identity CARD'}`, 30, validityY + 45);
 
-      // Fields (2-column)
       doc.setFontSize(12);
       doc.setFont(undefined, 'normal');
       let yPos = validityY + 65;
@@ -275,24 +266,19 @@ export default function Verify() {
           }
         });
 
-      // Footer
       doc.setFontSize(10);
       doc.setDrawColor(200);
       doc.line(20, 285, 190, 285);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 30, 292);
-
-      // Save
       doc.save(`myvalt-verified-${Date.now()}.pdf`);
     };
 
     return (
       <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
-        {/* Document Type */}
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           {'licenseNumber' in data ? 'Driving License' : 'National Identity Card'}
         </h2>
 
-        {/* VALID / INVALID Badge */}
         <div
           className={`p-5 rounded-xl mb-6 text-center border-2 font-bold text-lg transition-all ${
             ui.verifying
@@ -308,13 +294,9 @@ export default function Verify() {
               <span>Verifying…</span>
             </div>
           ) : ui.isValid ? (
-            <>
-              Verified Document
-            </>
+            <>Verified Document</>
           ) : (
-            <>
-              Unverified Document
-            </>
+            <>Unverified Document</>
           )}
         </div>
 
@@ -324,49 +306,24 @@ export default function Verify() {
           </p>
         )}
 
-        {/* Data Fields */}
-       <div className="space-y-4">
-  {Object.entries(data)
-    .filter(([key]) => key !== 'hash')
-    .map(([key, value]) => {
-      const displayValue = Array.isArray(value) ? value.join(', ') : value || '—';
-      return (
-        <div
-          key={key}
-          className="grid grid-cols-[1fr_auto_2.5fr] items-center border-b border-gray-200 pb-3 px-2"
-        >
-          {/* Label */}
-          <span className="font-medium text-gray-700 text-left">
-            {labels[key] || key}
-          </span>
-
-          {/* Colon with spacing */}
-          <span className="text-gray-500 text-center pr-4 pl-20">:</span>
-
-          {/* Value */}
-          <span className="text-gray-900 font-mono text-left break-words pl-20">
-            {displayValue}
-          </span>
+        <div className="space-y-4">
+          {Object.entries(data)
+            .filter(([key]) => key !== 'hash')
+            .map(([key, value]) => {
+              const displayValue = Array.isArray(value) ? value.join(', ') : value || '—';
+              return (
+                <div
+                  key={key}
+                  className="grid grid-cols-[1fr_auto_2.5fr] items-center border-b border-gray-200 pb-3 px-2"
+                >
+                  <span className="font-medium text-gray-700 text-left">{labels[key] || key}</span>
+                  <span className="text-gray-500 text-center pr-4 pl-20">:</span>
+                  <span className="text-gray-900 font-mono text-left break-words pl-20">{displayValue}</span>
+                </div>
+              );
+            })}
         </div>
 
-
-
-      );
-    })}
-</div>
-
-
-
-        {/* Back Link */}
-        {/* <a
-          href="/"
-          className="mt-8 block text-center text-blue-600 hover:text-blue-800 font-medium"
-        >
-          ← Verify Another Document
-        </a> */}
-
-
-        {/* *** NEW: Buttons Row *** */}
         <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t">
           <button
             onClick={downloadPDF}
@@ -379,7 +336,7 @@ export default function Verify() {
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
-            {ui.isValid === null ? 'Verifying...' : ui.isValid ? 'Download PDF' : 'Download PDF'}
+            {ui.isValid === null ? 'Verifying...' : 'Download PDF'}
           </button>
           <a
             href="/"
@@ -389,7 +346,6 @@ export default function Verify() {
           </a>
         </div>
       </div>
-      
     );
   }
 

@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import Verify from './pages/Verify';
+import StoreHash from './pages/StoreHash';
 import jsQR from 'jsqr';
 import './App.css';
 
@@ -33,6 +34,7 @@ function Navbar() {
               <li><a href="/" className="hover:text-blue-200 transition">Home</a></li>
               <li><a href="#guide" className="hover:text-blue-200 transition">Guide</a></li>
               <li><a href="#about" className="hover:text-blue-200 transition">About</a></li>
+              <li><a href="/store" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Store Hash</a></li>
             </ul>
           </div>
 
@@ -407,6 +409,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/verify" element={<Verify />} />
+        <Route path="/store" element={<StoreHash />} />
       </Routes>
     </BrowserRouter>
   );
