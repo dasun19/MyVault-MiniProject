@@ -10,6 +10,9 @@ import Verify from './pages/Verify';
 import StoreHash from './pages/StoreHash';
 import jsQR from 'jsqr';
 import './App.css';
+import DropdownMenu from './components/DropdownMenu';
+import AdminLogin from './components/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,14 +32,19 @@ function Navbar() {
               </div>
             </div>
 
+
             {/* DESKTOP NAV LINKS */}
             <ul className="hidden md:flex space-x-8 ml-20">
               <li><a href="/" className="hover:text-blue-200 transition">Home</a></li>
               <li><a href="#guide" className="hover:text-blue-200 transition">Guide</a></li>
               <li><a href="#about" className="hover:text-blue-200 transition">About</a></li>
-              <li><a href="/store" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Store Hash</a></li>
             </ul>
           </div>
+
+          {/* ---- NEW: DropdownMenu (visible only on ≥md) ---- */}
+            <div className="hidden md:block ml-6 mr-20">
+              <DropdownMenu />
+            </div>
 
           {/* MOBILE HAMBURGER */}
           <div className="md:hidden">
@@ -409,7 +417,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/verify" element={<Verify />} />
-        <Route path="/store" element={<StoreHash />} />
+        <Route path="/admin/dashboard/store" element={<StoreHash />} />
+        <Route path="/DropdownMenu" element={<DropdownMenu/>}/>
+        <Route path="/admin/login" element={<AdminLogin/>}/>
+        <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
       </Routes>
     </BrowserRouter>
   );

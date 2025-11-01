@@ -5,13 +5,31 @@ const Web3 = require("web3");
 
 const connectDB = require("./src/utils/database");
 const authRoutes = require("./src/routes/authRoutes");
+const adminAuth = require("./src/routes/adminAuth");
+const adminDashboard = require("./src/routes/adminDashboard");
 const HashRegistryABI = require("./artifacts/contracts/HashRegistry.sol/HashRegistry.json").abi;
+const { requireAdmin } = require("./src/middleware/authMiddleware");
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// JSON parse error handler - returns a clear 400 when incoming JSON is malformed
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('Invalid JSON payload received:', err.message);
+    return res.status(400).json({ success: false, message: 'Invalid JSON payload' });
+  }
+  // some body-parser versions throw SyntaxError
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('SyntaxError while parsing JSON:', err.message);
+    return res.status(400).json({ success: false, message: 'Malformed JSON' });
+  }
+  next();
+});
 
 // === CONNECT DB ===
 connectDB();
@@ -43,11 +61,24 @@ app.get("/", (req, res) => {
       hash: "POST /hash/sha256",
       store: "POST /store",
       verify: "GET /verify/:hash",
+      adminLogin: "POST /api/admin/login",
+      adminDashboard: "GET /api/admin/dashboard",
     },
   });
 });
 
+// Mount authentication routes
 app.use("/api/auth", authRoutes);
+
+// Mount admin routes
+if (adminAuth && typeof adminAuth === 'function') {
+    app.use("/api/admin", adminAuth);
+}
+
+// Mount admin dashboard routes
+if (adminDashboard && typeof adminDashboard === 'function') {
+    app.use("/api/admin", adminDashboard);
+}
 
 app.post("/hash/sha256", (req, res) => {
   const { data } = req.body;
@@ -58,7 +89,7 @@ app.post("/hash/sha256", (req, res) => {
 
 
 // --- Store hash endpoint ---
-app.post("/store", async (req, res) => {
+app.post("/store", requireAdmin ,async (req, res) => {
   let { hashHex } = req.body;
 
   if (!hashHex) return res.status(400).json({ error: "No hash provided" });

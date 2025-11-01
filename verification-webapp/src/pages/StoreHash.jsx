@@ -1,11 +1,35 @@
 // src/pages/StoreHash.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function StoreHash() {
   const [hash, setHash] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  const navigate = useNavigate();
+
+
+
+  useEffect(() => {
+  const token = localStorage.getItem("adminToken");
+  if (!token) {
+    navigate("/admin/login");
+    return;
+  }
+
+  // Optional: validate token
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.role !== "admin") {
+      localStorage.removeItem("adminToken");
+      navigate("/admin/login");
+    }
+  } catch {
+    navigate("/admin/login");
+  }
+}, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,19 +47,27 @@ export default function StoreHash() {
     }
 
     try {
+      // Attach admin token if available so only admins can store hashes
+      const token = localStorage.getItem('adminToken');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch('http://localhost:3000/store', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ hashHex: cleanHash }),
       });
 
       const data = await response.json();
-      if (response.ok) {
-        console.log('Hash stored successfully on the blockchain')
+      if (!response.ok) {
+        // show specific messages for auth problems
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Unauthorized: you must be an admin to store hashes');
+        }
+        throw new Error(data.error || 'Failed to store');
       }
 
-      if (!response.ok) throw new Error(data.error || 'Failed to store');
-
+      console.log('Hash stored successfully on the blockchain');
       setResult(data);
     } catch (err) {
       setError(err.message);
