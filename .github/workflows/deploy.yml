@@ -1,14 +1,22 @@
-name: CI/CD to Vercel
+name: Deploy to Vercel
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'verification-webapp/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'verification-webapp/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,27 +24,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ./verification-webapp/package-lock.json
+          cache-dependency-path: verification-webapp/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./verification-webapp
         run: npm ci
-        working-directory: ./verification-webapp
 
-      - name: Build
+      - name: Build project
+        working-directory: ./verification-webapp
         run: npm run build
-        working-directory: ./verification-webapp
-
-      - name: Debug Vercel IDs
-        run: |
-          echo "ORG_ID = '$VERCEL_ORG_ID'"
-          echo "PROJECT_ID = '$VERCEL_PROJECT_ID'"
-          [[ -n "$VERCEL_ORG_ID" ]] && echo "ORG_ID OK" || echo "ORG_ID MISSING"
-          [[ -n "$VERCEL_PROJECT_ID" ]] && echo "PROJECT_ID OK" || echo "PROJECT_ID MISSING"
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
@@ -45,3 +43,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./verification-webapp
+          vercel-args: '--prod'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
