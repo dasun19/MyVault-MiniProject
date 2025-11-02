@@ -10,6 +10,7 @@ Blockchain-Based Digital Identity & Document Verification System
   - [Prerequisites](#prerequisites)  
   - [Installation](#installation)  
   - [Running the Applications](#running-the-applications)  
+- [Deployment](#deployment)  
 - [Usage](#usage)  
 - [Contributing](#contributing)  
 - [License](#license)  
@@ -20,7 +21,7 @@ Blockchain-Based Digital Identity & Document Verification System
 ## Project Overview  
 **MyVault** is a privacy-first digital identity platform that leverages blockchain to enable secure and verifiable document authentication without central data storage.  
 
-Citizens store verifiable credentials (like digital driver’s licences or exam result sheets) locally on their devices, while only a cryptographic hash of the credential is stored on the blockchain by the authority.  
+Citizens store verifiable credentials (like digital driver's licences or exam result sheets) locally on their devices, while only a cryptographic hash of the credential is stored on the blockchain by the authority.  
 Verification happens by recomputing the hash and matching it with the stored on-chain value — ensuring privacy, security, and authenticity.  
 
 ### 🎯 Objectives  
@@ -33,11 +34,14 @@ Verification happens by recomputing the hash and matching it with the stored on-
 ## Features  
 - 🔐 **Decentralized Credential Verification** — hashes stored on blockchain  
 - 📱 **Mobile App** — React Native app for storing & showing credentials  
-- 🌐 **Web Verification Portal** — simple verifier interface  
+- 🌐 **Web Verification Portal** — simple verifier interface (Live on Vercel)  
 - ⚙️ **Blockchain Smart Contract** — stores and verifies document hashes  
 - 🧾 **Node.js Backend** — handles credential issuance and verification logic  
 - 🧱 **Local Development Blockchain** (Hardhat)  
+- 🚀 **CI/CD Pipeline** — automated deployment via GitHub Actions  
 - 🪶 Lightweight, privacy-first design  
+
+**🌐 Live Demo:** [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/)
 
 ---
 
@@ -46,6 +50,8 @@ Verification happens by recomputing the hash and matching it with the stored on-
 **Mobile App (Holder):** React Native CLI (no Expo)  
 **Backend API:** Node.js + Express  
 **Blockchain:** Solidity + Hardhat (local Ethereum test node)  
+**Deployment:** Vercel (Web App)  
+**CI/CD:** GitHub Actions  
 
 ---
 
@@ -85,6 +91,10 @@ MyVault-MiniProject/
 │   │   └── App.js
 │   ├── package.json
 │   └── metro.config.js
+│
+├── .github/
+│   └── workflows/
+│       └── deploy.yml                # CI/CD pipeline configuration
 │
 └── README.md                         # Project documentation
 ```
@@ -206,11 +216,41 @@ npx react-native run-ios
 
 ---
 
+## Deployment  
+
+### 🚀 Web Verification App (Vercel)  
+The verification web app is deployed on Vercel with automatic CI/CD.
+
+**Live URL:** [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/)
+
+#### Manual Deployment  
+```bash
+cd verification-webapp
+npm run build
+vercel --prod
+```
+
+#### Automatic Deployment via GitHub Actions  
+Every push to the `main` branch triggers an automated deployment pipeline:
+
+1. **Build & Test** — Verification webapp is built and tested
+2. **Deploy to Vercel** — Automatically deployed to production
+3. **Status Check** — Deployment status reported in GitHub
+
+The CI/CD pipeline is configured in `.github/workflows/deploy.yml`.
+
+To set up automatic deployment:
+1. Connect your GitHub repository to Vercel
+2. Configure Vercel environment variables (if needed)
+3. Push to `main` branch to trigger deployment
+
+---
+
 ## Usage  
 
 1. **Issuer:** Use backend API to issue new credentials (hash stored on blockchain).  
 2. **Citizen:** Mobile app stores credential locally, shows QR for verification.  
-3. **Verifier:** Web app scans QR or accepts credential ID → verifies by recomputing hash and checking blockchain.  
+3. **Verifier:** Access the live web app at [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/) or run locally — scan QR or accept credential ID → verifies by recomputing hash and checking blockchain.  
 
 ---
 
@@ -234,5 +274,4 @@ This project is licensed under the **MIT License** – see the [LICENSE](LICENSE
 ## Contact  
 👤 **Developer:** Dasun  
 📍 Kalutara, Sri Lanka  
-🔗 [GitHub](https://github.com/dasun19)  
- 
+🔗 [GitHub](https://github.com/dasun19)
