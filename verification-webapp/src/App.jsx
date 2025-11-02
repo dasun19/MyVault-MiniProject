@@ -357,7 +357,7 @@ function Home() {
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://yoursite.com/verify?data=..."
+            placeholder="https://myvault-verify.vercel.app/verify?data=..."
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
