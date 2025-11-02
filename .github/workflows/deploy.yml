@@ -1,12 +1,16 @@
-name: Deploy to Vercel (Debug)
+name: Deploy to Vercel
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'verification-webapp/**'
   pull_request:
     branches:
       - main
+    paths:
+      - 'verification-webapp/**'
   workflow_dispatch:
 
 jobs:
@@ -17,147 +21,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug - List root directory
-        run: |
-          echo "=== ROOT DIRECTORY CONTENTS ==="
-          ls -la
-          echo ""
-          echo "=== DIRECTORY TREE ==="
-          tree -L 2 || find . -maxdepth 2 -type d
-
-      - name: Debug - Check verification-webapp directory
-        run: |
-          echo "=== VERIFICATION-WEBAPP DIRECTORY ==="
-          if [ -d "verification-webapp" ]; then
-            echo "✓ verification-webapp directory EXISTS"
-            ls -la verification-webapp/
-          else
-            echo "✗ verification-webapp directory DOES NOT EXIST"
-            exit 1
-          fi
-
-      - name: Debug - Check for package.json
-        run: |
-          echo "=== CHECKING PACKAGE.JSON ==="
-          if [ -f "verification-webapp/package.json" ]; then
-            echo "✓ package.json EXISTS"
-            cat verification-webapp/package.json
-          else
-            echo "✗ package.json NOT FOUND"
-            exit 1
-          fi
-
-      - name: Debug - Check for vercel.json
-        run: |
-          echo "=== CHECKING VERCEL.JSON ==="
-          if [ -f "verification-webapp/vercel.json" ]; then
-            echo "✓ vercel.json EXISTS in verification-webapp"
-            cat verification-webapp/vercel.json
-          elif [ -f "vercel.json" ]; then
-            echo "⚠ vercel.json EXISTS in ROOT (should be in verification-webapp)"
-            cat vercel.json
-          else
-            echo "✗ vercel.json NOT FOUND anywhere"
-          fi
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-<<<<<<< HEAD
-=======
-
-      - name: Debug - Node and NPM versions
-        run: |
-          echo "=== NODE & NPM VERSIONS ==="
-          node --version
-          npm --version
->>>>>>> ea9a3822535e39a80b8ff426bb284c73a299077a
 
       - name: Install dependencies
         working-directory: ./verification-webapp
-        run: |
-          echo "=== INSTALLING DEPENDENCIES ==="
-          npm ci --verbose
-
-      - name: Debug - Check node_modules
-        working-directory: ./verification-webapp
-        run: |
-          echo "=== NODE_MODULES INSTALLED ==="
-          ls -la node_modules/ | head -20
+        run: npm ci
 
       - name: Build project
         working-directory: ./verification-webapp
-        run: |
-          echo "=== BUILDING PROJECT ==="
-          npm run build --verbose
+        run: npm run build
 
-<<<<<<< HEAD
       # Deploy from ROOT directory - let Vercel handle the Root Directory setting
       - name: Deploy to Vercel
         run: |
           npm install -g vercel@latest
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
-=======
-      - name: Debug - Check build output
-        working-directory: ./verification-webapp
-        run: |
-          echo "=== BUILD OUTPUT ==="
-          if [ -d "dist" ]; then
-            echo "✓ dist directory EXISTS"
-            ls -la dist/
-          elif [ -d "build" ]; then
-            echo "✓ build directory EXISTS"
-            ls -la build/
-          elif [ -d ".next" ]; then
-            echo "✓ .next directory EXISTS"
-            ls -la .next/
-          else
-            echo "⚠ No standard build output directory found"
-            ls -la
-          fi
-
-      - name: Debug - Vercel CLI install
-        run: |
-          echo "=== INSTALLING VERCEL CLI ==="
-          npm install -g vercel@latest
-          vercel --version
-
-      - name: Debug - Environment variables
-        run: |
-          echo "=== CHECKING SECRETS ==="
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-            echo "✗ VERCEL_TOKEN is NOT set"
-          else
-            echo "✓ VERCEL_TOKEN is set (length: ${#VERCEL_TOKEN})"
-          fi
-          
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "✗ VERCEL_ORG_ID is NOT set"
-          else
-            echo "✓ VERCEL_ORG_ID is set: ${{ secrets.VERCEL_ORG_ID }}"
-          fi
-          
-          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "✗ VERCEL_PROJECT_ID is NOT set"
-          else
-            echo "✓ VERCEL_PROJECT_ID is set: ${{ secrets.VERCEL_PROJECT_ID }}"
-          fi
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel (Production)
-        working-directory: ./verification-webapp
-        run: |
-          echo "=== DEPLOYING TO VERCEL ==="
-          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --debug
->>>>>>> ea9a3822535e39a80b8ff426bb284c73a299077a
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Debug - Deployment result
-        if: always()
-        run: |
-          echo "=== DEPLOYMENT COMPLETED ==="
-          echo "Check the logs above for the deployment URL"
