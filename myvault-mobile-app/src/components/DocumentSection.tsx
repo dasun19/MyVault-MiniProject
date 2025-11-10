@@ -107,29 +107,29 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
     setShowEditModal(true);
   };
 
-  const handleVerifyCard = async () => {
-    setShowOptionsMenu(false);
-    if (!savedDocument) return;
+  // const handleVerifyCard = async () => {
+  //   setShowOptionsMenu(false);
+  //   if (!savedDocument) return;
 
-    try {
-      const updatedDoc = {
-        ...savedDocument,
-        isVerified: !savedDocument.isVerified,
-        updatedAt: new Date().toISOString(),
-      };
-      await AsyncStorage.setItem(config.storageKey, JSON.stringify(updatedDoc));
-      setSavedDocument(updatedDoc);
-      Alert.alert(
-        'Verification Status Updated',
-        updatedDoc.isVerified
-          ? `${config.title} marked as verified!`
-          : 'Verification removed.'
-      );
-    } catch (error) {
-      console.error('Verification update error:', error);
-      Alert.alert('Error', 'Failed to update verification status.');
-    }
-  };
+  //   try {
+  //     const updatedDoc = {
+  //       ...savedDocument,
+  //       isVerified: !savedDocument.isVerified,
+  //       updatedAt: new Date().toISOString(),
+  //     };
+  //     await AsyncStorage.setItem(config.storageKey, JSON.stringify(updatedDoc));
+  //     setSavedDocument(updatedDoc);
+  //     Alert.alert(
+  //       'Verification Status Updated',
+  //       updatedDoc.isVerified
+  //         ? `${config.title} marked as verified!`
+  //         : 'Verification removed.'
+  //     );
+  //   } catch (error) {
+  //     console.error('Verification update error:', error);
+  //     Alert.alert('Error', 'Failed to update verification status.');
+  //   }
+  // };
 
   const renderEntryForm = (isEditMode = false) => {
     const commonProps = {
@@ -167,6 +167,13 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
           <VirtualIDCard cardData={savedDocument as IDCardData} showQRCode={false} />
         );
       case 'driving_license':
+        return (
+          <VirtualDrivingLicence
+            licenseData={savedDocument as DrivingLicenseData}
+            showQRCode={false}
+          />
+        );
+         case 'a_l_certificate':
         return (
           <VirtualDrivingLicence
             licenseData={savedDocument as DrivingLicenseData}
@@ -212,7 +219,9 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
         <View style={styles.collapsedCardInfo}>
           <Text style={styles.collapsedCardTitle}>{config.title}</Text>
           <Text style={styles.collapsedCardSubtitle}>
-            {savedDocument?.fullName || 'Tap to view details'}
+            {config.type === 'id_card'
+                ? (savedDocument as IDCardData)?.idNumber || 'Tap to view details'
+                : (savedDocument as DrivingLicenseData)?.licenseNumber || 'Tap to view details'}
           </Text>
         </View>
         <Text style={styles.expandIcon}>›</Text>
@@ -240,11 +249,11 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
         <View>
           {renderDocumentCard()}
           <View style={styles.actionButtons}>
-            {!savedDocument?.isVerified && (
+            {/* {!savedDocument?.isVerified && (
               <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyCard}>
                 <Text style={styles.buttonText}>Verify</Text>
               </TouchableOpacity>
-            )}
+            )} */}
             <TouchableOpacity style={styles.shareButton} onPress={() => setShowShareModal(true)}>
               <Text style={styles.buttonText}>Share</Text>
             </TouchableOpacity>
@@ -403,7 +412,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563eb',
     padding: 12,
     borderRadius: 8,
-    minWidth: 100,
+    minWidth: 150,
     alignItems: 'center',
   },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },

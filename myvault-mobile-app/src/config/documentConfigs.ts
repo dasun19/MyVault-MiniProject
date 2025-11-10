@@ -1,6 +1,6 @@
 // src/config/documentConfigs.ts
 
-export type DocumentType = 'id_card' | 'driving_license' | 'passport' | 'birth_certificate';
+export type DocumentType = 'id_card' | 'driving_license' | 'a_l_certificate' ;
 
 export interface DocumentConfig {
   id: string;
@@ -16,7 +16,7 @@ export const ID_CARD_CONFIG: DocumentConfig = {
   type: 'id_card',
   title: 'National Identity Card',
   storageKey: 'single_digital_id',
-  icon: '🆔',
+  icon: '',
   addButtonText: 'Tap to add your National ID Card',
 };
 
@@ -25,21 +25,22 @@ export const DRIVING_LICENSE_CONFIG: DocumentConfig = {
   type: 'driving_license',
   title: 'Driving License',
   storageKey: 'single_driving_license',
-  icon: '🚗',
+  icon: '',
   addButtonText: 'Tap to add your Driving License',
 };
 
 // Add more configs here as you create new document types
-// export const PASSPORT_CONFIG: DocumentConfig = {
-//   id: 'passport',
-//   type: 'passport',
-//   title: 'Passport',
-//   storageKey: 'single_passport',
-//   icon: '🛂',
-//   addButtonText: 'Tap to add your Passport',
-// };
+export const A_L_CERTIFICATE_CONFIG: DocumentConfig = {
+  id: 'a_l_certificate',
+  type: 'a_l_certificate',
+  title: 'G.C.E. A/L Certificate',
+  storageKey: 'single_a_l_certificate',
+  icon: '',
+  addButtonText: 'Tap to add your G.C.E. A/L Certificate',
+};
 
 export const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
   ID_CARD_CONFIG,
   DRIVING_LICENSE_CONFIG,
+  A_L_CERTIFICATE_CONFIG,
 ];

@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import JWTVerifier from '../components/JWTVerifier';
+
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -91,8 +91,10 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                                 View and manage your documents
                             </Text>
                         </TouchableOpacity>
-
-                        {/* JWT Verification */}
+                            </View>
+                         </View>
+                    {/* 
+                        JWT Verification
                         <TouchableOpacity 
                             style={styles.actionCard}
                             onPress={() => setShowJWTVerifier(true)}
@@ -104,11 +106,10 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                             <Text style={styles.actionSubtitle}>
                                 Scan or verify hashes
                             </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                        </TouchableOpacity> */}
+                
 
-                {/* Verification Section */}
+                {/* Verification Section
                 <View style={styles.verificationSection}>
                     <Text style={styles.sectionTitle}>Document Verification</Text>
                     
@@ -159,14 +160,14 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                             <Text style={styles.verifyButtonText}>Start Verification</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </View> */}
 
                 {/* Security Information Section */}
                 <View style={styles.securityInfoSection}>
                     <Text style={styles.sectionTitle}>Key Features of MyVault</Text>
                     
                     <View style={styles.securityInfoCard}>
-                        <Text style={styles.securityInfoTitle}></Text>
+                        
                         
                         <View style={styles.securityFeature}>
                             <Text style={styles.securityFeatureIcon}>🔒</Text>
@@ -201,7 +202,7 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                 </View>
             </ScrollView>
 
-            {/* Verifier Modal */}
+            {/* Verifier Modal
             <Modal
                 visible={showJWTVerifier}
                 animationType="slide"
@@ -221,7 +222,7 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                     
                     <JWTVerifier onClose={() => setShowJWTVerifier(false)} />
                 </View>
-            </Modal>
+            </Modal> */}
         </SafeAreaView>
     );
 };
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     actionsGrid: {
-        flexDirection: 'row',
+        //flexDirection: 'row',
         gap: 12,
     },
     actionCard: {
@@ -334,55 +335,55 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 16,
     },
-    verificationSection: {
-        margin: 20,
-        marginTop: 10,
-    },
-    verificationCard: {
-        backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: '#e3f2fd',
-    },
-    verificationHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    securityIconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#f0f8ff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-        borderWidth: 2,
-        borderColor: '#007AFF',
-    },
-    securityIcon: {
-        fontSize: 24,
-    },
-    verificationContent: {
-        flex: 1,
-    },
-    verificationTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    verificationSubtitle: {
-        fontSize: 14,
-        color: '#666',
-        lineHeight: 18,
-    },
+    // verificationSection: {
+    //     margin: 20,
+    //     marginTop: 10,
+    // },
+    // verificationCard: {
+    //     backgroundColor: 'white',
+    //     borderRadius: 16,
+    //     padding: 20,
+    //     shadowColor: '#000',
+    //     shadowOffset: { width: 0, height: 4 },
+    //     shadowOpacity: 0.1,
+    //     shadowRadius: 8,
+    //     elevation: 4,
+    //     borderWidth: 1,
+    //     borderColor: '#e3f2fd',
+    // },
+    // verificationHeader: {
+    //     flexDirection: 'row',
+    //     alignItems: 'center',
+    //     marginBottom: 16,
+    // },
+    // securityIconContainer: {
+    //     width: 60,
+    //     height: 60,
+    //     borderRadius: 30,
+    //     backgroundColor: '#f0f8ff',
+    //     justifyContent: 'center',
+    //     alignItems: 'center',
+    //     marginRight: 16,
+    //     borderWidth: 2,
+    //     borderColor: '#007AFF',
+    // },
+    // securityIcon: {
+    //     fontSize: 24,
+    // },
+    // verificationContent: {
+    //     flex: 1,
+    // },
+    // verificationTitle: {
+    //     fontSize: 18,
+    //     fontWeight: '600',
+    //     color: '#1a1a1a',
+    //     marginBottom: 4,
+    // },
+    // verificationSubtitle: {
+    //     fontSize: 14,
+    //     color: '#666',
+    //     lineHeight: 18,
+    // },
     featuresList: {
         marginBottom: 20,
     },
@@ -422,11 +423,14 @@ const styles = StyleSheet.create({
     securityInfoSection: {
         margin: 20,
         marginTop: 10,
+        
     },
     securityInfoCard: {
+       flex: 1,
         backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 20,
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,

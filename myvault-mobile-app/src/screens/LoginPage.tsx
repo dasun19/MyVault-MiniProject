@@ -28,7 +28,7 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch('http://10.218.76.233:3000/api/auth/validate-token', {
+    const response = await fetch('http://10.180.110.233:3000/api/auth/validate-token', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = 'http://10.218.76.233:3000/api/auth/login';
+      const endpoint = 'http://10.180.110.233:3000/api/auth/login';
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);

@@ -470,12 +470,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   saveButton: {
-    backgroundColor: '#ea580c',
+    backgroundColor: '#2563eb',
     paddingVertical: 16,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
-    shadowColor: '#ea580c',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

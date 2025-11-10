@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     color: '#666',
     paddingHorizontal: 20,
     paddingBottom: 4,
+    marginLeft:10,
   },
   mainContent: {
     flex: 1,

@@ -231,13 +231,11 @@ const styles = StyleSheet.create({
   card: {
     width: cardWidth,
     height: cardHeight,
-    backgroundColor: '#ea580c', // Orange color for driving license (fallback)
+    backgroundColor: '#0bae85ff', 
     borderRadius: 16,
     padding: 16,
     justifyContent: 'space-between',
-    // Alternative colors:
-    // backgroundColor: '#dc2626', // Red variant
-    // backgroundColor: '#c2410c', // Dark orange
+
   },
   cardHeader: {
     flexDirection: 'row',
@@ -350,12 +348,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 8,
     fontFamily: 'monospace',
+    
   },
   digitalStamp: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 9,
     fontWeight: '500',
     fontStyle: 'italic',
+    
   },
   verificationBadge: {
     position: 'absolute',

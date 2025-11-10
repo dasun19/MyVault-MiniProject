@@ -13,6 +13,8 @@ import './App.css';
 import DropdownMenu from './components/DropdownMenu';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import Guide from './pages/Guide';
+import About from './pages/About';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,8 +38,8 @@ function Navbar() {
             {/* DESKTOP NAV LINKS */}
             <ul className="hidden md:flex space-x-8 ml-20">
               <li><a href="/" className="hover:text-blue-200 transition">Home</a></li>
-              <li><a href="#guide" className="hover:text-blue-200 transition">Guide</a></li>
-              <li><a href="#about" className="hover:text-blue-200 transition">About</a></li>
+              <li><a href="/guide" className="hover:text-blue-200 transition">Guide</a></li>
+              <li><a href="/about" className="hover:text-blue-200 transition">About</a></li>
             </ul>
           </div>
 
@@ -69,8 +71,8 @@ function Navbar() {
           <div className="md:hidden bg-blue-700 rounded-b-lg">
             <ul className="px-4 py-3 space-y-2">
               <li><a href="/" className="block py-2 hover:text-blue-200">Home</a></li>
-              <li><a href="#guide" className="block py-2 hover:text-blue-200">Guide</a></li>
-              <li><a href="#about" className="block py-2 hover:text-blue-200">About</a></li>
+              <li><a href="/guide" className="block py-2 hover:text-blue-200">Guide</a></li>
+              <li><a href="/about" className="block py-2 hover:text-blue-200">About</a></li>
             </ul>
           </div>
         )}
@@ -421,6 +423,8 @@ function App() {
         <Route path="/DropdownMenu" element={<DropdownMenu/>}/>
         <Route path="/admin/login" element={<AdminLogin/>}/>
         <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
+        <Route path="/guide" element={<Guide/>}/>
+        <Route path="/about" element={<About/>}/>
       </Routes>
     </BrowserRouter>
   );
