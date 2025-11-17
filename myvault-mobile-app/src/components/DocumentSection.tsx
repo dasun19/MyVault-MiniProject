@@ -15,7 +15,8 @@ import ManualDLEntryForm from './ManualDLEntryForm';
 import VirtualIDCard from './VirtualIDCard';
 import VirtualDrivingLicence from './VirtualDrivingLicence';
 import IDCardOptionsMenu  from './IDCardOptionsMenu';
-import ShareModal  from './ShareModal';   
+import ShareModal  from './ShareModal';
+import { User,IdCard, Scroll,FileCheck } from 'lucide-react-native';   
 
 import { DocumentConfig } from '../config/documentConfigs';
 
@@ -206,7 +207,10 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
     </View>
   );
 
-  const renderCollapsedCard = () => (
+  const renderCollapsedCard = () => {
+    const IconComponent = config.icon;
+  
+  return ( 
     <TouchableOpacity
       style={styles.collapsedCard}
       onPress={() => setIsCardExpanded(true)}
@@ -214,7 +218,7 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
     >
       <View style={styles.collapsedCardContent}>
         <View style={styles.collapsedCardIcon}>
-          <Text style={styles.cardIconText}>{config.icon}</Text>
+            <IconComponent size={35} color="#2563eb" />
         </View>
         <View style={styles.collapsedCardInfo}>
           <Text style={styles.collapsedCardTitle}>{config.title}</Text>
@@ -227,7 +231,7 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
         <Text style={styles.expandIcon}>›</Text>
       </View>
     </TouchableOpacity>
-  );
+  )};
 
   const renderVirtualSection = () => (
     <View style={styles.virtualIdContainer}>
@@ -362,8 +366,8 @@ const styles = StyleSheet.create({
   collapsedCardIcon: {
     width: 50,
     height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f8ff',
+    borderRadius: 5,
+    backgroundColor: '#ffffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

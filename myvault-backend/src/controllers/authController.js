@@ -225,9 +225,127 @@ const validateToken = async (req, res) => {
   }
 };
 
+// Update user account
+const updateAccount = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { fullName, email, phoneNumber } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { fullName, email, phoneNumber },
+            { new: true}
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({success: false, message: "User not found"});
+
+        }
+
+        res.json({
+            success: true,
+            message: 'Account updated successfully',
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Update account error:', error);
+        res.status(500).json({success: false, message: 'Server error during account update'});
+    }
+};
+
+// Delete user account
+const deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        await User.findByIdAndDelete(userId);
+
+        res.json({
+            success: true,
+            message: 'Account deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({success: false, message: 'Server error during account deletion'});
+
+    }
+};
+
+// Forgot Password
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "No account found with this email"
+            });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString("hex");
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Data.now() + 10 * 60 * 1000; // 10 minutes
+        await user.save();
+
+        const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        await sendVerificationEmail(
+            email,
+            `Click to reset your password: ${resetURL}`
+        );
+
+        res.json({
+            success: true,
+            message: "Password reset link sent to your email"
+        });
+    } catch (error){
+        console.error("Forgot password error:", error);
+        res.status(500).json({ success: false, message: "Server error"});
+    }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { newPassword } = req.body;
+
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired token"
+            });
+        }
+
+        user.passwordHash = newPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Password reset successful"
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ success: false, message: "Server error"});
+    }
+};
+
 module.exports = {
     register,
     login,
     verifyEmail,
-    validateToken
+    validateToken,
+    updateAccount,
+    deleteAccount,
+    forgotPassword,
+    resetPassword
 };

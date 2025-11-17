@@ -47,7 +47,9 @@ const userSchema = new mongoose.Schema({
         default: 'pending'
     },
     emailVerificationToken: String,
-    emailVerificationTokenExpires: Date
+    emailVerificationTokenExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
 }, 
 {
     timestamps: true // Automatically adds createdAt and updatedAt

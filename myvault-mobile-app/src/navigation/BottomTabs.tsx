@@ -4,7 +4,7 @@ import HomeScreen from '../screens/HomeScreen';
 import DocumentScreen from '../screens/DocumentScreen';
 import MoreScreen from '../screens/MoreScreen';
 import { RouteProp } from '@react-navigation/native';
-import { Image } from 'react-native';
+import { Home, FileText, MoreVertical } from 'lucide-react-native';
 
 type TabParamList = {
     Home: undefined;
@@ -29,31 +29,22 @@ const BottomTabs = () => {
         tabBarLabel: route.name,
         tabBarStyle: {
             height: 75,
-            paddignBottom: 5,
-            paddingTop:10,
-
+            paddingBottom: 5,
+            paddingTop: 10,
         },
         tabBarLabelStyle: {
             fontSize: 14,
-            
-        
         },
         accessibilityLabel: `${route.name} tab`,
         tabBarIcon: ({ color, size }: { color: string; size: number }) => {
-          const iconMap: Record<string, any> = {
-            Home: require('../assets/images/home.png'),
-            'My Documents': require('../assets/images/document.png'),
-            More: require('../assets/images/more.png'),
+          const iconMap: Record<string, React.ComponentType<{ size: number; color: string }>> = {
+            Home: Home,
+            'My Documents': FileText,
+            More: MoreVertical,
           };
-          return (<Image
-                    source = {iconMap[route.name]}
-                    style = {{
-                        width: 28,
-                        height: 28,
-                        tintColor: color
-                    }}
-                    />
-          );
+          
+          const IconComponent = iconMap[route.name];
+          return <IconComponent size={size} color={color} />;
         },
       }),
     []

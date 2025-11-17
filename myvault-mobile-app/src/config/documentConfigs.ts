@@ -1,4 +1,5 @@
 // src/config/documentConfigs.ts
+import { IdCard, FileText, Award ,  LucideIcon} from 'lucide-react-native';
 
 export type DocumentType = 'id_card' | 'driving_license' | 'a_l_certificate' ;
 
@@ -7,7 +8,7 @@ export interface DocumentConfig {
   type: DocumentType;
   title: string;
   storageKey: string;
-  icon: string;
+  icon:  LucideIcon;
   addButtonText: string;
 }
 
@@ -16,7 +17,7 @@ export const ID_CARD_CONFIG: DocumentConfig = {
   type: 'id_card',
   title: 'National Identity Card',
   storageKey: 'single_digital_id',
-  icon: '',
+  icon: IdCard,
   addButtonText: 'Tap to add your National ID Card',
 };
 
@@ -25,7 +26,7 @@ export const DRIVING_LICENSE_CONFIG: DocumentConfig = {
   type: 'driving_license',
   title: 'Driving License',
   storageKey: 'single_driving_license',
-  icon: '',
+  icon: IdCard,
   addButtonText: 'Tap to add your Driving License',
 };
 
@@ -35,7 +36,7 @@ export const A_L_CERTIFICATE_CONFIG: DocumentConfig = {
   type: 'a_l_certificate',
   title: 'G.C.E. A/L Certificate',
   storageKey: 'single_a_l_certificate',
-  icon: '',
+  icon: FileText,
   addButtonText: 'Tap to add your G.C.E. A/L Certificate',
 };
 

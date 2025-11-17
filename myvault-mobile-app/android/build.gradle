@@ -7,20 +7,28 @@ buildscript {
         ndkVersion = "27.1.12297006"
         kotlinVersion = "1.9.10"
 
-         // ADD these to force the text recognition package to use SDK 36
+        // Force ML Text Recognition to use same SDK versions
         TextRecognition_compileSdkVersion = 36
         TextRecognition_buildToolsVersion = "36.0.0"
         TextRecognition_targetSdkVersion = 36
     }
+
     repositories {
         google()
         mavenCentral()
     }
+
     dependencies {
-        classpath("com.android.tools.build:gradle")
+        // You need a specific Android Gradle Plugin version (not empty)
+        classpath("com.android.tools.build:gradle:8.2.2")
+
+        // React Native Gradle plugin (works with RN 0.73+)
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+
+        // Kotlin Gradle plugin with version
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10")
     }
 }
 
+// Apply React Native root plugin
 apply plugin: "com.facebook.react.rootproject"

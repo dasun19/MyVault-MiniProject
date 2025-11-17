@@ -99,7 +99,7 @@ const generatePasskey = (): string => {
   return result;
 };
 
-const VERIFICATION_URL = 'https://your-verification-site.com/verify';
+const VERIFICATION_URL = 'https://myvault-verify.vercel.app/verify';
 
 // EXPORTED COMPONENT
 export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
@@ -176,7 +176,7 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
   setPasskey(newPasskey);
 
   // THIS IS THE FIX: Generate FULL URL
-  const verificationUrl = `http://localhost:5173/verify?data=${encodeURIComponent(payload)}`;
+  const verificationUrl = `https://myvault-verify.vercel.app/verify?data=${encodeURIComponent(payload)}`;
   setQrValue(verificationUrl); // QR now contains the URL
 };
 

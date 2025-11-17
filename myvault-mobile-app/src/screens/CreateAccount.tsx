@@ -102,7 +102,7 @@ const CreateAccountScreen = ({ navigation }) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://10.218.76.233:3000/api/auth/register', {
+      const response = await fetch('http://10.143.59.233:3000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

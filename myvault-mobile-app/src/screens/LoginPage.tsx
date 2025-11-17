@@ -28,7 +28,7 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch('http://10.180.110.233:3000/api/auth/validate-token', {
+    const response = await fetch('http://10.143.59.233:3000/api/auth/validate-token', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = 'http://10.180.110.233:3000/api/auth/login';
+      const endpoint = 'http://10.143.59.233:3000/api/auth/login';
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);
@@ -537,6 +537,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             />
             {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
           </View>
+          
         )}
 
         {/* PIN Input */}
@@ -578,6 +579,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               >
                 <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
               </TouchableOpacity>
+
+              
+
             </View>
             {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           </View>
@@ -622,6 +626,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         >
           <Text style={styles.linkText}>
             Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style = {styles.linkButton} onPress={() => navigation.navigate("ForgotPassword")}>
+          <Text style={styles.forgetPasswordText}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -789,6 +798,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 32,
     alignItems: 'center',
+    justifyContent: 'center',
+    
   },
   iconContainer: {
     width: 80,
@@ -1058,6 +1069,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
   },
+  forgetPasswordText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 5,
+  },
   linkTextBold: {
     color: '#2563eb',
     fontWeight: '600',
@@ -1123,6 +1139,13 @@ const styles = StyleSheet.create({
     color: '#166534',
     marginBottom: 4,
   },
+  forgotText: {
+  color: "#2563eb",
+  marginBottom: 16,
+  textAlign: "right",
+  fontWeight: "600"
+},
+
 });
 
 export default LoginScreen;

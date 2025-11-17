@@ -1,6 +1,15 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { register, login, verifyEmail, validateToken } = require('../controllers/authController');
+const { 
+    register, 
+    login, 
+    verifyEmail, 
+    validateToken,
+    updateAccount,
+    deleteAccount,
+    forgotPassword,
+    resetPassword
+ } = require('../controllers/authController');
 const validateRequest = require('../middleware/validateRequest');
 const auth = require('../middleware/auth');  
 
@@ -49,5 +58,16 @@ router.get('/verify-email', verifyEmail);
 
 router.get('/validate-token', auth, validateToken);
 
-// FIXED: Removed the trailing comma
+// Update account
+router.put('/update', auth, updateAccount);
+
+// Delete account
+router.delete('/delete', auth, deleteAccount);
+
+// Forgot Password
+router.post('/forgot-password', forgotPassword);
+
+// Reset password
+router.post('/reset-password/:token', resetPassword);
+
 module.exports = router;

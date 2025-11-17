@@ -10,7 +10,16 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import BottomTabs from './src/navigation/BottomTabs';
 import DocumentScreen from './src/screens/DocumentScreen';
+import ProfileScreen from './src/screens/ProfileScreen'; 
+import SettingsScreen from './src/screens/SettingsScreen';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
+
+export type TabParamList = {
+  Home: undefined;
+  'My Documents': undefined;
+  More: undefined;
+};
 // Define navigation types for my screens
 export type RootStackParamList = {
   Language: undefined; // For my LanguageScreen
@@ -18,11 +27,15 @@ export type RootStackParamList = {
   Signin: undefined; // For my SigninScreen
   CreateAccount: undefined; // For my CreateAccountScreen
   Home: undefined;
-  Document: undefined;
   Login: undefined;
   FirstTimeLogin: undefined;
   EmailVerification: undefined;
-  BottomTabs: undefined;
+  BottomTabs: NavigatorScreenParams<TabParamList>;
+  More: undefined;
+  Profile: undefined;
+  Settings: undefined;
+  Help: undefined;
+  About: undefined;
 };
 
 // Create a stack navigator
@@ -59,11 +72,20 @@ const App = () =>{
           component={BottomTabs} 
           options = {{headerShown: false}}/>
 
-          <Stack.Screen name = "Document"
-          component={DocumentScreen} 
-          options = {{headerShown: false}}/>
-
+        <Stack.Screen 
+          name="Profile"
+          component={ProfileScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Settings"
+          component={SettingsScreen} 
+          options={{ headerShown: false }}
+        />
+        
       </Stack.Navigator>
+
+      
     </NavigationContainer>
   );
 };

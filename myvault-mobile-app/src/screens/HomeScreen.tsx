@@ -12,6 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AppHeader from '../components/AppHeader';
+import { User, FileText, Shield,  ShieldCheck,Lock,Link, Link2, CircleCheck,QrCode, Share2,Send} from 'lucide-react-native';
+
 
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -50,18 +53,8 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
 
     return (
         <SafeAreaView style = {styles.container} >
+            <AppHeader />
             <ScrollView showsVerticalScrollIndicator={false}>
-
-            <View style = { styles.logoContainer }>
-                <View style = {styles.logoContent}>
-                <Image 
-                    source = {require('../assets/images/logo.png')}
-                    style = {styles.logo}
-                    resizeMode = 'contain'/>
-                <Text style = {styles.myvaultTitle}>MyVault</Text>
-                </View>
-                
-            </View>
 
             <View style={styles.advertisements}>
             <Animated.View style={[styles.advertisement, { opacity: fadeAnim }]}>
@@ -81,14 +74,31 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                         {/* Navigate to Documents */}
                         <TouchableOpacity 
                             style={styles.actionCard}
-                            onPress={() => navigation.navigate('Document')}
+                            onPress={() => {
+                                    navigation.navigate('BottomTabs', { 
+                                    screen: 'My Documents' 
+                                     })}}
+                                    
                         >
                             <View style={styles.actionIconContainer}>
-                                <Text style={styles.actionIcon}>📄</Text>
+                                <FileText size={35} color="#2563eb" />
                             </View>
                             <Text style={styles.actionTitle}>My Documents</Text>
                             <Text style={styles.actionSubtitle}>
                                 View and manage your documents
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.actionCard}
+                            onPress={() => navigation.navigate('Profile')}
+                        >
+                            <View style={styles.actionIconContainer}>
+                                 <User size={38} color="#2563eb" />
+                            </View>
+                            <Text style={styles.actionTitle}>Profile</Text>
+                            <Text style={styles.actionSubtitle}>
+                                View and manage your Profile
                             </Text>
                         </TouchableOpacity>
                             </View>
@@ -170,7 +180,7 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                         
                         
                         <View style={styles.securityFeature}>
-                            <Text style={styles.securityFeatureIcon}>🔒</Text>
+                            <Shield size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
                             <View style={styles.securityFeatureContent}>
                                 <Text style={styles.securityFeatureTitle}>Your Identity, Your Control</Text>
                                 <Text style={styles.securityFeatureDesc}>
@@ -180,7 +190,7 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                         </View>
 
                         <View style={styles.securityFeature}>
-                            <Text style={styles.securityFeatureIcon}>🔗</Text>
+                            <CircleCheck size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
                             <View style={styles.securityFeatureContent}>
                                 <Text style={styles.securityFeatureTitle}>Verified by Blockchain</Text>
                                 <Text style={styles.securityFeatureDesc}>
@@ -190,7 +200,7 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                         </View>
 
                         <View style={styles.securityFeature}>
-                            <Text style={styles.securityFeatureIcon}>🔁</Text>
+                             <QrCode size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
                             <View style={styles.securityFeatureContent}>
                                 <Text style={styles.securityFeatureTitle}>Encrypted QR Code Sharing</Text>
                                 <Text style={styles.securityFeatureDesc}>
@@ -295,7 +305,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     actionsGrid: {
-        //flexDirection: 'row',
+        flexDirection: 'row',
         gap: 12,
     },
     actionCard: {

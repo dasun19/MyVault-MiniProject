@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DocumentSection from '../components/DocumentSection';
 import { ALL_DOCUMENT_CONFIGS } from '../config/documentConfigs';
+import AppHeader from '../components/AppHeader';
 
 type DocumentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Document'>;
 
@@ -18,17 +19,7 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoContent}>
-          <Image 
-            source={require('../assets/images/logo.png')} 
-            style={styles.logo} 
-            resizeMode="contain" 
-          />
-          <Text style={styles.myvaultTitle}>MyVault</Text>
-        </View>
-        <Text style={styles.subtitle}>Manage your digital documents securely</Text>
-      </View>
+      <AppHeader />
 
       {/* Main Content */}
       <ScrollView 
