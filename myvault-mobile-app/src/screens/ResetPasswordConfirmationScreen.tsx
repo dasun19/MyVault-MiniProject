@@ -7,25 +7,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
+type Props = NativeStackScreenProps<RootStackParamList, "ResetPasswordConfirmation">;
 
-const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
-  // Get email from route params
-  const { email } = route.params || {};
-  const [otp, setOtp] = useState("");
+const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
+  const { email } = route.params;
+  const [verificationCode, setVerificationCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleResetPassword = async () => {
+  const handleSubmit = async () => {
     // Validation
-    if (!otp.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+    if (!verificationCode.trim() || !newPassword.trim() || !confirmPassword.trim()) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
 
-    if (otp.length !== 6) {
-      Alert.alert("Error", "OTP must be 6 digits.");
+    if (verificationCode.length !== 5) {
+      Alert.alert("Error", "Verification code must be 5 digits.");
       return;
     }
 
@@ -39,21 +38,16 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
-    if (!email) {
-      Alert.alert("Error", "Email not found. Please start over.");
-      return;
-    }
-
     setLoading(true);
 
     try {
       const res = await fetch("http://10.143.59.233:3000/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email,
-          otp,
-          newPassword 
+          verificationCode,
+          newPassword,
         }),
       });
 
@@ -61,14 +55,13 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
 
       if (res.ok && data.success) {
         Alert.alert(
-          "Success", 
-          "Password reset successful! You can now login with your new password.",
+          "Success",
+          "Password reset successful! You can now login.",
           [{ text: "OK", onPress: () => navigation.navigate("Login") }]
         );
       } else {
         Alert.alert("Error", data.message || "Unable to reset password.");
       }
-
     } catch (err) {
       console.error("Reset password error:", err);
       Alert.alert("Error", "Network error. Check your connection.");
@@ -77,33 +70,8 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const handleResendOTP = async () => {
-    if (!email) {
-      Alert.alert("Error", "Email not found.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("http://10.143.59.233:3000/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-      
-      if (res.ok && data.success) {
-        Alert.alert("Success", "New OTP sent to your email.");
-      } else {
-        Alert.alert("Error", "Unable to resend OTP.");
-      }
-    } catch (err) {
-      console.error("Resend OTP error:", err);
-      Alert.alert("Error", "Network error.");
-    } finally {
-      setLoading(false);
-    }
+  const handleBackToForgot = () => {
+    navigation.navigate("ForgotPassword");
   };
 
   return (
@@ -111,16 +79,16 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.subtitle}>
-          Enter the 6-digit OTP sent to {email}
+          Enter the 5-digit code sent to {email}
         </Text>
 
         <TextInput
-          placeholder="Enter 6-digit OTP"
-          value={otp}
-          onChangeText={setOtp}
+          placeholder="Verification Code"
+          value={verificationCode}
+          onChangeText={setVerificationCode}
           style={styles.input}
           keyboardType="number-pad"
-          maxLength={6}
+          maxLength={5}
           placeholderTextColor="#999"
         />
 
@@ -134,7 +102,7 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <TextInput
-          placeholder="Confirm New Password"
+          placeholder="Confirm Password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           style={styles.input}
@@ -144,7 +112,7 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
 
         <TouchableOpacity
           style={[styles.button, loading && { opacity: 0.5 }]}
-          onPress={handleResetPassword}
+          onPress={handleSubmit}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
@@ -153,40 +121,39 @@ const ResetPassword: React.FC<Props> = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.resendButton}
-          onPress={handleResendOTP}
-          disabled={loading}
+          style={styles.backButton}
+          onPress={handleBackToForgot}
         >
-          <Text style={styles.resendText}>Didn't receive OTP? Resend</Text>
+          <Text style={styles.backText}>Back to Forgot Password</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
-export default ResetPassword;
+export default ResetPasswordConfirmation;
 
 const styles = StyleSheet.create({
-  mainContainer: { 
-    flex: 1, 
-    padding: 20, 
-    backgroundColor: "#fff" 
+  mainContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
   },
-  container: { 
-    padding: 20, 
-    backgroundColor: "#fff", 
+  container: {
+    padding: 20,
+    backgroundColor: "#fff",
     marginTop: 50,
-    borderRadius: 15
+    borderRadius: 15,
   },
-  title: { 
-    fontSize: 28, 
-    fontWeight: "700", 
-    marginBottom: 10 
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
     color: "#6b7280",
-    marginBottom: 20
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,
@@ -194,13 +161,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
-    fontSize: 16
+    fontSize: 16,
   },
   button: {
     backgroundColor: "#2563eb",
     padding: 16,
     borderRadius: 10,
-    marginTop: 10
+    marginTop: 10,
   },
   buttonText: {
     color: "#fff",
@@ -208,13 +175,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  resendButton: {
+  backButton: {
     marginTop: 20,
-    alignItems: "center"
+    alignItems: "center",
   },
-  resendText: {
+  backText: {
     color: "#2563eb",
     fontSize: 14,
-    fontWeight: "600"
-  }
+    fontWeight: "600",
+  },
 });

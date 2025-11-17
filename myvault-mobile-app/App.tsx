@@ -13,6 +13,8 @@ import DocumentScreen from './src/screens/DocumentScreen';
 import ProfileScreen from './src/screens/ProfileScreen'; 
 import SettingsScreen from './src/screens/SettingsScreen';
 import { NavigatorScreenParams } from '@react-navigation/native';
+import ForgotPassword from './src/screens/ForgotPasswordScreen';
+import ResetPasswordConfirmation from './src/screens/ResetPasswordConfirmationScreen';
 
 
 export type TabParamList = {
@@ -22,10 +24,10 @@ export type TabParamList = {
 };
 // Define navigation types for my screens
 export type RootStackParamList = {
-  Language: undefined; // For my LanguageScreen
-  Welcome: undefined; // For my WelcomeScreen
-  Signin: undefined; // For my SigninScreen
-  CreateAccount: undefined; // For my CreateAccountScreen
+  Language: undefined;
+  Welcome: undefined;
+  Signin: undefined;
+  CreateAccount: undefined;
   Home: undefined;
   Login: undefined;
   FirstTimeLogin: undefined;
@@ -36,6 +38,8 @@ export type RootStackParamList = {
   Settings: undefined;
   Help: undefined;
   About: undefined;
+  ForgotPassword: undefined;
+  ResetPasswordConfirmation: { email: string };
 };
 
 // Create a stack navigator
@@ -80,6 +84,16 @@ const App = () =>{
         <Stack.Screen 
           name="Settings"
           component={SettingsScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="ForgotPassword"
+          component={ForgotPassword} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="ResetPasswordConfirmation"
+          component={ResetPasswordConfirmation} 
           options={{ headerShown: false }}
         />
         

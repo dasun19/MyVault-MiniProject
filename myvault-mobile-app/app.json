@@ -1,4 +1,22 @@
 {
   "name": "MyVault",
-  "displayName": "MyVault"
+  "displayName": "MyVault",
+  "expo": {
+    "scheme": "myvault",
+    "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "yourapp.com",
+              "pathPrefix": "/reset-password"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    }
+  }
 }

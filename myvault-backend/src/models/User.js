@@ -48,8 +48,8 @@ const userSchema = new mongoose.Schema({
     },
     emailVerificationToken: String,
     emailVerificationTokenExpires: Date,
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
+     resetPasswordCode: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
 }, 
 {
     timestamps: true // Automatically adds createdAt and updatedAt

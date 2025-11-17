@@ -64,10 +64,36 @@ router.put('/update', auth, updateAccount);
 // Delete account
 router.delete('/delete', auth, deleteAccount);
 
-// Forgot Password
-router.post('/forgot-password', forgotPassword);
+// Forgot Password - sends verification code
+router.post('/forgot-password', [
+    body('email')
+        .trim()
+        .isEmail()
+        .normalizeEmail()
+        .withMessage('Please provide a valid email')
+], validateRequest, forgotPassword);
 
-// Reset password
-router.post('/reset-password/:token', resetPassword);
+// Reset password with verification code
+router.post('/reset-password', [
+    body('email')
+        .trim()
+        .isEmail()
+        .normalizeEmail()
+        .withMessage('Please provide a valid email'),
+    
+    body('verificationCode')
+        .trim()
+        .isLength({ min: 5, max: 5 })
+        .isNumeric()
+        .withMessage('Verification code must be 5 digits'),
+    
+    body('newPassword')
+        .isLength({ min: 8, max: 20 })
+        .withMessage('Password must be at least 8 characters long.')
+        .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+        .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+        .matches(/[0-9]/).withMessage('Password must contain at least one number')
+        .matches(/[^A-Za-z0-9]/).withMessage('Password must contain at least one special character')
+], validateRequest, resetPassword);
 
 module.exports = router;

@@ -2,7 +2,8 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { sendVerificationEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetOTP } = require('../utils/emailService'); 
+const bcrypt = require('bcryptjs');
 
 //Generate JWT token
 const generateToken = (userId) => {
@@ -271,73 +272,101 @@ const deleteAccount = async (req, res) => {
     }
 };
 
-// Forgot Password
+// Forgot Password - generates verification code
 const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
 
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({
+        if (!email) {
+            return res.status(400).json({
                 success: false,
-                message: "No account found with this email"
+                message: "Email is required"
             });
         }
 
-        const resetToken = crypto.randomBytes(20).toString("hex");
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Data.now() + 10 * 60 * 1000; // 10 minutes
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Don't reveal if user exists (security best practice)
+            return res.status(200).json({
+                success: true,
+                message: "If an account exists with this email, a verification code has been sent"
+            });
+        }
+
+        // Generate 5-digit verification code
+        const verificationCode = Math.floor(10000 + Math.random() * 90000).toString();
+        
+        // Save code and expiry (10 minutes to match email message)
+        user.resetPasswordCode = verificationCode;
+        user.resetPasswordExpires = Date.now() + 600000; // 10 minutes (not 1 hour)
         await user.save();
 
-        const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        // Send code via email
+        await sendPasswordResetOTP(user.email, verificationCode);
 
-        await sendVerificationEmail(
-            email,
-            `Click to reset your password: ${resetURL}`
-        );
-
-        res.json({
+        res.status(200).json({
             success: true,
-            message: "Password reset link sent to your email"
+            message: "Verification code sent to your email. It will expire in 10 minutes."
         });
-    } catch (error){
-        console.error("Forgot password error:", error);
-        res.status(500).json({ success: false, message: "Server error"});
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error sending verification code. Please try again.'
+        });
     }
 };
 
-// Reset password
+// Reset password with verification code
 const resetPassword = async (req, res) => {
     try {
-        const { token } = req.params;
-        const { newPassword } = req.body;
+        const { email, verificationCode, newPassword } = req.body;
 
+        if (!email || !verificationCode || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, verification code, and new password are required.'
+            });
+        }
+
+        // Find user with valid verification code
         const user = await User.findOne({
-            resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() }
+            email,
+            resetPasswordCode: verificationCode,
+            resetPasswordExpires: { $gt: Date.now() } // Check not expired
         });
 
         if (!user) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid or expired token"
+                message: 'Invalid or expired verification code.'
             });
         }
 
+        // Update password (will be auto-hashed by pre-save hook)
         user.passwordHash = newPassword;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
+        
+        // Clear reset code fields
+        user.resetPasswordCode = null;
+        user.resetPasswordExpires = null;
+        
         await user.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
-            message: "Password reset successful"
+            message: 'Password reset successful. You can now login with your new password.'
         });
+
     } catch (error) {
         console.error('Reset password error:', error);
-        res.status(500).json({ success: false, message: "Server error"});
+        res.status(500).json({
+            success: false,
+            message: 'Error resetting password. Please try again.'
+        });
     }
 };
+
 
 module.exports = {
     register,
@@ -347,5 +376,6 @@ module.exports = {
     updateAccount,
     deleteAccount,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    
 };
