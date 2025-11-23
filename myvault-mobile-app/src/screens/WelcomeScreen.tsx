@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Image, Alert} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {RootStackParamList} from '../../App';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -13,20 +14,34 @@ type Props = {
 const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
 
     // Function to navigate to SigninScreen
-    const handleSignin = () => {
+    const handleSignin = async () => {
         console.log('Navigating to SigninScreen');
-        navigation.navigate('Login'); // Assuming you have a Signin screen defined in your navigator
+        
+        try {
+            // Check if user has a valid token and security setup is complete
+            const token = await AsyncStorage.getItem('authToken');
+            const userData = await AsyncStorage.getItem('userData');
+            const securitySetupComplete = await AsyncStorage.getItem('securitySetupComplete');
 
+            // If user has valid token and security setup, show re-auth screen
+            if (token && userData && securitySetupComplete === 'true') {
+                console.log('✅ Valid token found - showing re-authentication screen');
+                navigation.navigate('ReAuthenticate');
+            } else {
+                console.log('❌ No valid token - showing login screen');
+                navigation.navigate('Login');
+            }
+        } catch (error) {
+            console.error('❌ Error checking token:', error);
+            // Default to login screen on error
+            navigation.navigate('Login');
+        }
     };
 
     // Function to navigate to CreateAccountScreen
     const handleCreateAccount = () => {
         console.log('Navigating to CreateAccountScreen');
         navigation.navigate('CreateAccount'); // CreateAccount screen defined in your navigator
-    };
-    //Function to go back to LanguageScreen
-    const goBackToLanguageScreen = () => {
-        navigation.navigate('Language');
     };
 
     return (

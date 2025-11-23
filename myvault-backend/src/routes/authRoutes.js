@@ -11,7 +11,9 @@ const {
     resetPassword
  } = require('../controllers/authController');
 const validateRequest = require('../middleware/validateRequest');
-const auth = require('../middleware/auth');  
+const auth = require('../middleware/auth'); 
+const User = require('../models/User');
+   
 
 const router = express.Router();
 
@@ -95,5 +97,7 @@ router.post('/reset-password', [
         .matches(/[0-9]/).withMessage('Password must contain at least one number')
         .matches(/[^A-Za-z0-9]/).withMessage('Password must contain at least one special character')
 ], validateRequest, resetPassword);
+
+
 
 module.exports = router;

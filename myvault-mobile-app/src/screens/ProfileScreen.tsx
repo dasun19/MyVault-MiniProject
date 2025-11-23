@@ -120,16 +120,27 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         onPress: async () => {
           setLoggingOut(true);
           try {
+            // Clear all auth-related data but preserve documents
             await AsyncStorage.multiRemove([
               'authToken',
               'userData',
-              'pinLoginEnabled',
+              'userPin',
               'biometricEnabled',
               'securitySetupComplete',
+              'pinLoginEnabled',
+              'registrationEmail'
             ]);
-            navigation.replace('Login');
+            
+            console.log('✅ Logout complete - navigating to Welcome');
+            
+            // Use reset to clear navigation stack completely
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
           } catch (error) {
-            console.log(error);
+            console.error('❌ Logout error:', error);
+            Alert.alert('Error', 'Failed to log out. Please try again.');
           } finally {
             setLoggingOut(false);
           }

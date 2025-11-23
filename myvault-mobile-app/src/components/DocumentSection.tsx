@@ -57,18 +57,69 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [savedDocument, setSavedDocument] = useState<DocumentData | null>(null);
   const [isCardExpanded, setIsCardExpanded] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSavedDocument();
+    getUserId();
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      loadSavedDocument();
+    }
+  }, [userId]);
+
+  // Get current logged-in user ID
+  const getUserId = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        // Use user's unique identifier (id or idNumber)
+        const userIdentifier = user.id || user.idNumber;
+        console.log('📱 Current user ID:', userIdentifier);
+        setUserId(userIdentifier);
+      } else {
+        console.warn('⚠️ No user data found');
+        setUserId(null);
+      }
+    } catch (error) {
+      console.error('❌ Error getting user ID:', error);
+      setUserId(null);
+    }
+  };
+
+  // Generate user-specific storage key
+  const getUserStorageKey = (): string => {
+    if (!userId) {
+      console.warn('⚠️ No userId available, using default key');
+      return config.storageKey;
+    }
+    const userKey = `${userId}_${config.storageKey}`;
+    console.log('🔑 Using storage key:', userKey);
+    return userKey;
+  };
 
   const loadSavedDocument = async () => {
     try {
-      const savedData = await AsyncStorage.getItem(config.storageKey);
+      if (!userId) {
+        console.log('⏳ Waiting for userId to load document');
+        return;
+      }
+
+      const storageKey = getUserStorageKey();
+      const savedData = await AsyncStorage.getItem(storageKey);
       const parsedData: DocumentData | null = savedData ? JSON.parse(savedData) : null;
+      
+      if (parsedData) {
+        console.log('✅ Document loaded for user:', userId);
+      } else {
+        console.log('📄 No document found for user:', userId);
+      }
+      
       setSavedDocument(parsedData);
     } catch (error) {
-      console.error('Error loading document:', error);
+      console.error('❌ Error loading document:', error);
       Alert.alert('Error', `Failed to load saved ${config.title}.`);
       setSavedDocument(null);
     }
@@ -93,12 +144,14 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
 
   const deleteDocument = async () => {
     try {
-      await AsyncStorage.removeItem(config.storageKey);
+      const storageKey = getUserStorageKey();
+      await AsyncStorage.removeItem(storageKey);
       setSavedDocument(null);
       setShowOptionsMenu(false);
+      console.log('🗑️ Document deleted for user:', userId);
       Alert.alert('Success', `${config.title} deleted successfully!`);
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('❌ Delete error:', error);
       Alert.alert('Error', `Failed to delete ${config.title}.`);
     }
   };
@@ -108,34 +161,10 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
     setShowEditModal(true);
   };
 
-  // const handleVerifyCard = async () => {
-  //   setShowOptionsMenu(false);
-  //   if (!savedDocument) return;
-
-  //   try {
-  //     const updatedDoc = {
-  //       ...savedDocument,
-  //       isVerified: !savedDocument.isVerified,
-  //       updatedAt: new Date().toISOString(),
-  //     };
-  //     await AsyncStorage.setItem(config.storageKey, JSON.stringify(updatedDoc));
-  //     setSavedDocument(updatedDoc);
-  //     Alert.alert(
-  //       'Verification Status Updated',
-  //       updatedDoc.isVerified
-  //         ? `${config.title} marked as verified!`
-  //         : 'Verification removed.'
-  //     );
-  //   } catch (error) {
-  //     console.error('Verification update error:', error);
-  //     Alert.alert('Error', 'Failed to update verification status.');
-  //   }
-  // };
-
   const renderEntryForm = (isEditMode = false) => {
     const commonProps = {
       onClose: handleManualEntryClose,
-      storageKey: config.storageKey,
+      storageKey: getUserStorageKey(), // Use user-specific key
       restrictToSingle: true,
     };
 
@@ -253,11 +282,6 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
         <View>
           {renderDocumentCard()}
           <View style={styles.actionButtons}>
-            {/* {!savedDocument?.isVerified && (
-              <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyCard}>
-                <Text style={styles.buttonText}>Verify</Text>
-              </TouchableOpacity>
-            )} */}
             <TouchableOpacity style={styles.shareButton} onPress={() => setShowShareModal(true)}>
               <Text style={styles.buttonText}>Share</Text>
             </TouchableOpacity>
@@ -270,6 +294,15 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
       <View style={styles.menuSeparator} />
     </View>
   );
+
+  // Don't render anything until userId is loaded
+  if (!userId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -319,6 +352,15 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+  },
   addIdContainer: { alignItems: 'center' },
   addIdCard: {
     backgroundColor: 'white',
@@ -405,13 +447,6 @@ const styles = StyleSheet.create({
   },
   backButtonText: { color: '#000000ff', fontSize: 16, fontWeight: '600' },
   actionButtons: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 },
-  verifyButton: {
-    backgroundColor: '#2563eb',
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-  },
   shareButton: {
     backgroundColor: '#2563eb',
     padding: 12,

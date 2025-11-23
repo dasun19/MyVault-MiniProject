@@ -17,7 +17,8 @@ interface DrivingLicenseData {
   dateOfExpiry: string;
   address?: string;
   bloodGroup?: string;
-  vehicleClasses?: string[]; // e.g., ['A', 'B1', 'B', 'C1']
+  vehicleClasses?: string[];
+  idNumber?: string; // NEW: Added ID number field
   hash: string;
   createdAt: string;
   updatedAt: string;
@@ -31,8 +32,8 @@ interface VirtualDrivingLicenseProps {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const cardWidth = screenWidth - 40; // 20px margin on each side
-const cardHeight = cardWidth * 0.63; // Standard ID card ratio
+const cardWidth = screenWidth - 40;
+const cardHeight = cardWidth * 0.63;
 
 const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
   licenseData,
@@ -40,7 +41,6 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
   showQRCode = false
 }) => {
   
-  // Format date for display
   const formatDisplayDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -54,7 +54,6 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
     }
   };
 
-  // Extract initials from name for avatar
   const getInitials = (name: string): string => {
     return name
       .split(' ')
@@ -64,7 +63,6 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
       .toUpperCase();
   };
 
-  // Format vehicle classes
   const getVehicleClassesText = (): string => {
     if (!licenseData.vehicleClasses || licenseData.vehicleClasses.length === 0) {
       return 'B1';
@@ -78,17 +76,6 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
       onPress={onPress}
       activeOpacity={0.95}
     >
-      {/* 
-        If you have react-native-linear-gradient installed, use this:
-        <LinearGradient
-          colors={['#c2410c', '#ea580c', '#f97316']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
-          style={styles.card}
-        >
-        
-        If not, use the View below with a solid background:
-      */}
       <View style={styles.card}>
         
         {/* Header Section */}
@@ -120,6 +107,14 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
               </Text>
             </View>
 
+            {/* NEW: ID Number - Added inline with other fields */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>NIC:</Text>
+              <Text style={styles.fieldValue}>
+                {licenseData.idNumber || 'N/A'}
+              </Text>
+            </View>
+
             {/* License Number */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>License No:</Text>
@@ -136,13 +131,7 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
               </Text>
             </View>
 
-            {/* Vehicle Classes */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Vehicle Classes:</Text>
-              <Text style={styles.fieldValue}>
-                {getVehicleClassesText()}
-              </Text>
-            </View>
+            
 
           </View>
 
@@ -152,7 +141,7 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
             {/* Date of Issue */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Date of Issue:</Text>
-              <Text style={styles.fieldValue}>
+              <Text style={styles.fieldValueRight}>
                 {formatDisplayDate(licenseData.dateOfIssue)}
               </Text>
             </View>
@@ -160,8 +149,16 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
             {/* Date of Expiry */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Date of Expiry:</Text>
-              <Text style={styles.fieldValue}>
+              <Text style={styles.fieldValueRight}>
                 {formatDisplayDate(licenseData.dateOfExpiry)}
+              </Text>
+            </View>
+
+            {/* Vehicle Classes */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Vehicle Classes:</Text>
+              <Text style={styles.fieldValueRight}>
+                {getVehicleClassesText()}
               </Text>
             </View>
 
@@ -169,25 +166,11 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
             {licenseData.bloodGroup && (
               <View style={styles.fieldContainer}>
                 <Text style={styles.fieldLabel}>Blood Group:</Text>
-                <Text style={styles.fieldValue}>
+                <Text style={styles.fieldValueRight}>
                   {licenseData.bloodGroup}
                 </Text>
               </View>
             )}
-
-            {/* Digital Badge 
-            <View style={styles.digitalBadge}>
-              <Text style={styles.digitalBadgeText}>DIGITAL</Text>
-            </View>*/}
-
-            {/* QR Code placeholder - you can implement actual QR code later 
-            {showQRCode && (
-              <View style={styles.qrCodeContainer}>
-                <Text style={styles.qrCodePlaceholder}>QR</Text>
-                <Text style={styles.qrCodeText}>Scan me</Text>
-              </View>
-            )}
-              */}
 
           </View>
         </View>
@@ -208,10 +191,6 @@ const VirtualDrivingLicense: React.FC<VirtualDrivingLicenseProps> = ({
         </View>
 
       </View>
-      {/* 
-        If using LinearGradient, close it here:
-        </LinearGradient> 
-      */}
       
     </TouchableOpacity>
   );
@@ -221,7 +200,6 @@ const styles = StyleSheet.create({
   cardContainer: {
     alignItems: 'center',
     marginVertical: 10,
-    // Add shadow for the card
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -235,7 +213,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     justifyContent: 'space-between',
-
   },
   cardHeader: {
     flexDirection: 'row',
@@ -306,6 +283,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    
+  },
+   fieldValueRight: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: 'right',
   },
   digitalBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -348,14 +337,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 8,
     fontFamily: 'monospace',
-    
   },
   digitalStamp: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 9,
     fontWeight: '500',
     fontStyle: 'italic',
-    
   },
   verificationBadge: {
     position: 'absolute',

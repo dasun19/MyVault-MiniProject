@@ -45,6 +45,13 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [savedHash, setSavedHash] = useState<string | null>(null);
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  // Load logged-in user's ID number
+  useEffect(() => {
+    loadLoggedInUser();
+  }, []);
 
   // Pre-fill form if editing
   useEffect(() => {
@@ -58,8 +65,35 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
     }
   }, [editingCard]);
 
+  const loadLoggedInUser = async () => {
+    try {
+      setIsLoadingUser(true);
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        // Get the user's ID number from their account
+        const userId = user.idNumber || user.id;
+        console.log('🔐 Logged in user ID:', userId);
+        setLoggedInUserId(userId);
+      } else {
+        Alert.alert('Error', 'Unable to verify user identity. Please log in again.');
+        onClose?.();
+      }
+    } catch (error) {
+      console.error('❌ Error loading user:', error);
+      Alert.alert('Error', 'Failed to load user information.');
+      onClose?.();
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
+  const normalizeIdNumber = (id: string): string => {
+    return id.replace(/\s/g, '').toUpperCase().trim();
+  };
+
   const validateNIC = (nic: string): boolean => {
-    const cleanedNIC = nic.replace(/\s/g, '').toUpperCase();
+    const cleanedNIC = normalizeIdNumber(nic);
     const oldFormat = /^\d{9}[VX]$/;
     const newFormat = /^\d{12}$/;
     return oldFormat.test(cleanedNIC) || newFormat.test(cleanedNIC);
@@ -80,19 +114,33 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
 
   const validateForm = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    if (!formData.idNumber.trim()) errors.push('ID Number is required');
-    else if (!validateNIC(formData.idNumber)) errors.push('Invalid NIC format. Use 9 digits + V/X or 12 digits');
+    
+    if (!formData.idNumber.trim()) {
+      errors.push('ID Number is required');
+    } else if (!validateNIC(formData.idNumber)) {
+      errors.push('Invalid NIC format. Use 9 digits + V/X or 12 digits');
+    } else {
+      // SECURITY CHECK: Verify ID matches logged-in user
+      const inputId = normalizeIdNumber(formData.idNumber);
+      const loggedId = normalizeIdNumber(loggedInUserId || '');
+      
+      if (inputId !== loggedId) {
+        errors.push('⚠️ Security Alert: You can only add your own National ID card. The ID number must match your registered account.');
+      }
+    }
+    
     if (!formData.fullName.trim()) errors.push('Full Name is required');
     if (!formData.dateOfBirth.trim()) errors.push('Date of Birth is required');
     else if (!validateDate(formData.dateOfBirth)) errors.push('Invalid Date of Birth format');
     if (!formData.issuedDate.trim()) errors.push('Issued Date is required');
     else if (!validateDate(formData.issuedDate)) errors.push('Invalid Issued Date format');
+    
     return { isValid: errors.length === 0, errors };
   };
 
   const generateDataHash = (): string => {
     const dataString = [
-      formData.idNumber.replace(/\s/g, '').toUpperCase(),
+      normalizeIdNumber(formData.idNumber),
       formData.fullName.trim().toUpperCase(),
       formData.dateOfBirth,
       formData.issuedDate
@@ -106,9 +154,9 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
       const existingDataStr = await AsyncStorage.getItem(storageKey);
       if (!existingDataStr) return false;
       const existingData: IDCardData[] = JSON.parse(existingDataStr);
-      const cleanedInputNIC = formData.idNumber.replace(/\s/g, '').toUpperCase();
+      const cleanedInputNIC = normalizeIdNumber(formData.idNumber);
       return existingData.some(card => 
-        card.idNumber.replace(/\s/g, '').toUpperCase() === cleanedInputNIC
+        normalizeIdNumber(card.idNumber) === cleanedInputNIC
       );
     } catch (error) {
       console.error('Error checking for duplicates:', error);
@@ -119,9 +167,11 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
   const saveIDCard = async () => {
     try {
       setIsProcessing(true);
+      
+      // Validate form including security check
       const validation = validateForm();
       if (!validation.isValid) {
-        Alert.alert('Validation Error', validation.errors.join('\n'));
+        Alert.alert('Validation Error', validation.errors.join('\n\n'));
         return;
       }
 
@@ -136,7 +186,7 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
 
       const idCardData: IDCardData = {
         id: editingCard ? editingCard.id : generateUniqueId(),
-        idNumber: formData.idNumber.replace(/\s/g, '').toUpperCase(),
+        idNumber: normalizeIdNumber(formData.idNumber),
         fullName: formData.fullName.trim().toUpperCase(),
         dateOfBirth: formData.dateOfBirth,
         issuedDate: formData.issuedDate,
@@ -160,6 +210,7 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
       }
 
       setSavedHash(hash);
+      console.log('✅ ID card saved successfully with security validation');
       Alert.alert('Success', editingCard ? 'ID updated successfully!' : 'ID saved successfully!');
     } catch (error: any) {
       console.error('Save error:', error);
@@ -173,6 +224,16 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
     setFormData({ idNumber: '', fullName: '', dateOfBirth: '', issuedDate: '' });
     setSavedHash(null);
   };
+
+  // Loading state while fetching user
+  if (isLoadingUser) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Verifying user identity...</Text>
+      </View>
+    );
+  }
 
   if (savedHash) {
     return (
@@ -195,12 +256,9 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
           <Text style={styles.hashValue}>{savedHash}</Text>
         </View>
 
-    
-          
-          <TouchableOpacity style={styles.doneButton} onPress={onClose}>
-            <Text style={styles.doneText}>Done</Text>
-          </TouchableOpacity>
-       
+        <TouchableOpacity style={styles.doneButton} onPress={onClose}>
+          <Text style={styles.doneText}>Done</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -212,6 +270,13 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
         <Text style={styles.subtitle}>
           Enter your Sri Lankan National Identity Card details
         </Text>
+      </View>
+
+
+      {/* Show logged-in user's ID for reference */}
+      <View style={styles.userInfoCard}>
+        <Text style={styles.userInfoLabel}>Your Registered ID Number:</Text>
+        <Text style={styles.userInfoValue}>{loggedInUserId || 'Not available'}</Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -226,7 +291,7 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
             autoCapitalize="characters"
           />
           <Text style={styles.inputHelp}>
-            {/*'Enter 9 digits + V/X (old format) or 12 digits (new format)*/}
+            Must match your registered account ID number
           </Text>
         </View>
 
@@ -239,9 +304,6 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
             placeholder="Enter full name as on ID card"
             autoCapitalize="characters"
           />
-          <Text style={styles.inputHelp}>
-            {/*Enter your complete name as it appears on the ID card*/}
-          </Text>
         </View>
 
         <View style={styles.inputContainer}>
@@ -253,9 +315,6 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
             placeholder="YYYY-MM-DD (e.g., 1990-05-15)"
             maxLength={10}
           />
-          <Text style={styles.inputHelp}>
-            {/*Format: YYYY-MM-DD (Year-Month-Day)*/}
-          </Text>
         </View>
 
         <View style={styles.inputContainer}>
@@ -267,9 +326,6 @@ const ManualIDEntryForm: React.FC<ManualIDEntryFormProps> = ({
             placeholder="YYYY-MM-DD (e.g., 2020-03-10)"
             maxLength={10}
           />
-          <Text style={styles.inputHelp}>
-            {/*Date when your ID card was issued*/}
-          </Text>
         </View>
 
         <TouchableOpacity 
@@ -293,6 +349,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   headerContainer: {
     padding: 20,
     paddingBottom: 10,
@@ -309,6 +376,55 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  securityNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#fff3cd',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ffc107',
+  },
+  securityIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  securityTextContainer: {
+    flex: 1,
+  },
+  securityTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  securityText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  userInfoCard: {
+    backgroundColor: '#e7f3ff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0056b3',
+    marginBottom: 6,
+  },
+  userInfoValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#007AFF',
+    fontFamily: 'monospace',
   },
   formContainer: {
     padding: 20,
@@ -426,28 +542,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  addAnotherButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  addAnotherText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   doneButton: {
     backgroundColor: '#007AFF',
     paddingVertical: 14,
-    marginLeft:20,
-    marginRight:20,
+    marginLeft: 20,
+    marginRight: 20,
     borderRadius: 10,
     alignItems: 'center',
   },

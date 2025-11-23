@@ -22,7 +22,7 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://10.143.59.233:3000/api/auth/forgot-password", {
+      const res = await fetch("http://10.190.80.233:3000/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

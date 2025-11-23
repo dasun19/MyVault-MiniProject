@@ -14,9 +14,10 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBiometrics from 'react-native-biometrics';
 import CryptoJS from 'crypto-js';
+import {  Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
 
 type LoginMode = 'idNumber' | 'pin' | 'biometric';
-type FlowStep = 'login' | 'security-setup' | 'complete';
+type FlowStep = 'login' | 'security-setup';
 
 interface LoginScreenProps {
   navigation: any;
@@ -28,7 +29,7 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch('http://10.143.59.233:3000/api/auth/validate-token', {
+    const response = await fetch('http://10.190.80.233:3000/api/auth/validate-token', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -157,16 +158,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         setLoginMode('idNumber');
       }
 
-      // Validate existing token if present
-      if (token && userData) {
-        const isTokenValid = await validateToken(token);
-        if (!isTokenValid) {
-          console.log('🚫 Invalid token detected, logging out');
-          await handleLogout();
-          Alert.alert('Session Expired', 'Please log in again.');
-        }
-      }
-
     } catch (error) {
       console.error('❌ Initialization error:', error);
       setIsFirstTimeLogin(true);
@@ -241,7 +232,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = 'http://10.143.59.233:3000/api/auth/login';
+      const endpoint = 'http://10.190.80.233:3000/api/auth/login';
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);
@@ -353,14 +344,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogout = async (): Promise<void> => {
     try {
+      // Clear ONLY auth-related data, preserve documents stored locally
       await AsyncStorage.multiRemove([
-        'authToken', 
-        'userData', 
-        'userPin', 
-        'biometricEnabled', 
+        'authToken',
+        'userData',
+        'userPin',
+        'biometricEnabled',
         'securitySetupComplete',
-        'pinLoginEnabled'
+        'pinLoginEnabled',
+        'registrationEmail'
       ]);
+      
+      // Reset all local state
       setUser(null);
       setFlowStep('login');
       setLoginMode('idNumber');
@@ -370,8 +365,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       setPassword('');
       setBiometricEnabled(false);
       setIsFirstTimeLogin(true);
+      
+      console.log('✅ Logout complete - auth data cleared, documents preserved');
+      
+      // Navigate back to Welcome screen with replace to clear navigation stack
+      navigation.replace('Welcome');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
       Alert.alert('Error', 'Failed to log out. Please try again.');
     }
   };
@@ -419,6 +419,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
+      // Validate that at least one option is enabled
+      const anyOptionSelected = securityOptions.enablePinLogin || securityOptions.enableBiometric;
+      if (!anyOptionSelected) {
+        setErrors({ submit: 'Please select at least one security method' });
+        setIsLoading(false);
+        return;
+      }
+
       // Create PIN if enabled
       if (securityOptions.enablePinLogin) {
         const pinCreated = await handlePinCreation();
@@ -431,6 +439,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       let biometricSuccess = true;
       if (securityOptions.enableBiometric && biometricSupported) {
         biometricSuccess = await setupBiometric();
+        if (!biometricSuccess) {
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Store all settings
@@ -439,10 +451,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       await AsyncStorage.setItem('securitySetupComplete', 'true');
 
       console.log('✅ Security setup complete');
-      setFlowStep('complete');
-      setTimeout(() => {
-        navigation.replace('BottomTabs');
-      }, 2000);
+      
+      // Show success alert and navigate directly to home
+      Alert.alert(
+        'Login Successful!',
+        'Welcome to MyVault. Your account is now secure.',
+        [
+          {
+            text: 'Get Started',
+            onPress: () => {
+              navigation.replace('BottomTabs');
+            },
+          },
+        ]
+      );
     } catch (error) {
       console.error('❌ Security setup error:', error);
       setErrors({ submit: 'Error during security setup. Please try again.' });
@@ -642,7 +664,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <Text style={styles.shieldIcon}>🔒</Text>
+          <Lock size={40} color='#2563eb' />
         </View>
         <Text style={styles.title}>Secure Your Account</Text>
         <Text style={styles.subtitle}>
@@ -653,12 +675,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <View style={styles.securityOptions}>
         <View style={styles.optionCard}>
           <View style={styles.optionHeader}>
-            <View style={styles.optionInfo}>
-              <Text style={styles.optionIcon}>🔢</Text>
-              <View>
+            <View style={styles.optionIcon}>
+             <SquareAsterisk size={30} color='#2563eb' />
+              <View >
                 <Text style={styles.optionTitle}>PIN Login</Text>
                 <Text style={styles.optionDescription}>Quick access with your 6-digit PIN</Text>
-              </View>
+               </View>
             </View>
             <Switch
               value={securityOptions.enablePinLogin}
@@ -707,8 +729,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
         <View style={styles.optionCard}>
           <View style={styles.optionHeader}>
-            <View style={styles.optionInfo}>
-              <Text style={styles.optionIcon}>👆</Text>
+            <View style={styles.optionIcon}>
+              <Fingerprint size={30} color="#2563eb" />
               <View>
                 <Text style={styles.optionTitle}>{getBiometricTypeText()} Login</Text>
                 <Text style={styles.optionDescription}>
@@ -739,14 +761,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => setFlowStep('login')}
-          disabled={isLoading}
-        >
-          <Text style={styles.secondaryButtonText}>Skip</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[styles.primaryButton, isLoading && styles.submitButtonDisabled]}
           onPress={handleSecuritySetup}
           disabled={isLoading}
@@ -759,31 +773,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     </ScrollView>
   );
 
-  const renderComplete = (): JSX.Element => (
-    <View style={styles.container}>
-      <View style={styles.centerContent}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.successIcon}>✅</Text>
-        </View>
-        <Text style={styles.title}>Setup Complete!</Text>
-        <Text style={styles.message}>
-          Your account is now secure and ready to use.
-        </Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.replace('BottomTabs')}
-        >
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+
 
   return (
     <>
       {flowStep === 'login' && renderLoginStep()}
       {flowStep === 'security-setup' && renderSecuritySetup()}
-      {flowStep === 'complete' && renderComplete()}
     </>
   );
 };
@@ -959,17 +954,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    
   },
   optionInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    
   },
   optionIcon: {
-    fontSize: 24,
-    color: '#2563eb',
-    marginRight: 12,
-  },
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,   
+},
+ 
   optionTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1079,10 +1077,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginHorizontal: 24,
-    marginTop: 8,
+    marginHorizontal: 50,
+    marginTop: 16,
+    marginBottom: 24,
   },
   primaryButton: {
     backgroundColor: '#2563eb',
@@ -1102,6 +1099,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.6,
   },
   secondaryButtonText: {
     color: '#ffffff',

@@ -29,6 +29,7 @@ interface DrivingLicenseData {
   address?: string;
   bloodGroup?: string;
   vehicleClasses?: string[];
+  idNumber: string; // NEW: Added ID number field
   hash: string;
   createdAt: string;
   updatedAt: string;
@@ -49,10 +50,18 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
     address: '',
     bloodGroup: '',
     vehicleClasses: '',
+    idNumber: '', // NEW: Added ID number to form
   });
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [savedHash, setSavedHash] = useState<string | null>(null);
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  // Load logged-in user's ID number
+  useEffect(() => {
+    loadLoggedInUser();
+  }, []);
 
   // Pre-fill form if editing
   useEffect(() => {
@@ -66,13 +75,46 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
         address: editingLicense.address || '',
         bloodGroup: editingLicense.bloodGroup || '',
         vehicleClasses: editingLicense.vehicleClasses?.join(', ') || '',
+        idNumber: editingLicense.idNumber || '', // NEW
       });
     }
   }, [editingLicense]);
 
+  const loadLoggedInUser = async () => {
+    try {
+      setIsLoadingUser(true);
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const userId = user.idNumber || user.id;
+        console.log('🔐 Logged in user ID:', userId);
+        setLoggedInUserId(userId);
+      } else {
+        Alert.alert('Error', 'Unable to verify user identity. Please log in again.');
+        onClose?.();
+      }
+    } catch (error) {
+      console.error('❌ Error loading user:', error);
+      Alert.alert('Error', 'Failed to load user information.');
+      onClose?.();
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
+  const normalizeIdNumber = (id: string): string => {
+    return id.replace(/\s/g, '').toUpperCase().trim();
+  };
+
+  const validateNIC = (nic: string): boolean => {
+    const cleanedNIC = normalizeIdNumber(nic);
+    const oldFormat = /^\d{9}[VX]$/;
+    const newFormat = /^\d{12}$/;
+    return oldFormat.test(cleanedNIC) || newFormat.test(cleanedNIC);
+  };
+
   const validateLicenseNumber = (licenseNum: string): boolean => {
     const cleaned = licenseNum.replace(/\s/g, '').toUpperCase();
-    // Sri Lankan license format: Letter followed by 7 digits (e.g., B1234567)
     const licenseFormat = /^[A-Z]\d{7}$/;
     return licenseFormat.test(cleaned);
   };
@@ -84,7 +126,7 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
   };
 
   const validateBloodGroup = (bg: string): boolean => {
-    if (!bg) return true; // Optional field
+    if (!bg) return true;
     const validGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     return validGroups.includes(bg.toUpperCase());
   };
@@ -105,6 +147,21 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
 
   const validateForm = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
+    
+    // NEW: ID Number validation with security check
+    if (!formData.idNumber.trim()) {
+      errors.push('ID Number is required');
+    } else if (!validateNIC(formData.idNumber)) {
+      errors.push('Invalid NIC format. Use 9 digits + V/X or 12 digits');
+    } else {
+      // SECURITY CHECK: Verify ID matches logged-in user
+      const inputId = normalizeIdNumber(formData.idNumber);
+      const loggedId = normalizeIdNumber(loggedInUserId || '');
+      
+      if (inputId !== loggedId) {
+        errors.push('⚠️ Security Alert: You can only add your own driving license. The ID number must match your registered account.');
+      }
+    }
     
     if (!formData.licenseNumber.trim()) {
       errors.push('License Number is required');
@@ -155,6 +212,7 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
 
   const generateDataHash = (): string => {
     const dataString = [
+      normalizeIdNumber(formData.idNumber), // NEW: Include ID in hash
       formData.licenseNumber.replace(/\s/g, '').toUpperCase(),
       formData.fullName.trim().toUpperCase(),
       formData.dateOfBirth,
@@ -184,9 +242,11 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
   const saveLicense = async () => {
     try {
       setIsProcessing(true);
+      
+      // Validate form including security check
       const validation = validateForm();
       if (!validation.isValid) {
-        Alert.alert('Validation Error', validation.errors.join('\n'));
+        Alert.alert('Validation Error', validation.errors.join('\n\n'));
         return;
       }
 
@@ -206,6 +266,7 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
 
       const licenseData: DrivingLicenseData = {
         id: editingLicense ? editingLicense.id : generateUniqueId(),
+        idNumber: normalizeIdNumber(formData.idNumber), // NEW: Save ID number
         licenseNumber: formData.licenseNumber.replace(/\s/g, '').toUpperCase(),
         fullName: formData.fullName.trim().toUpperCase(),
         dateOfBirth: formData.dateOfBirth,
@@ -234,6 +295,7 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
       }
 
       setSavedHash(hash);
+      console.log('✅ License saved successfully with security validation');
       Alert.alert('Success', editingLicense ? 'License updated successfully!' : 'License saved successfully!');
     } catch (error: any) {
       console.error('Save error:', error);
@@ -253,9 +315,19 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
       address: '',
       bloodGroup: '',
       vehicleClasses: '',
+      idNumber: '',
     });
     setSavedHash(null);
   };
+
+  if (isLoadingUser) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={styles.loadingText}>Verifying user identity...</Text>
+      </View>
+    );
+  }
 
   if (savedHash) {
     return (
@@ -297,7 +369,29 @@ const ManualLicenseEntryForm: React.FC<ManualLicenseEntryFormProps> = ({
         </Text>
       </View>
 
+      {/* Show logged-in user's ID for reference */}
+      <View style={styles.userInfoCard}>
+        <Text style={styles.userInfoLabel}>Your Registered ID Number:</Text>
+        <Text style={styles.userInfoValue}>{loggedInUserId || 'Not available'}</Text>
+      </View>
+
       <View style={styles.formContainer}>
+        {/* NEW: ID Number Input Field - FIRST */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>National ID Number *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={formData.idNumber}
+            onChangeText={(value) => handleInputChange('idNumber', value)}
+            placeholder="e.g., 123456789V or 200012345678"
+            maxLength={12}
+            autoCapitalize="characters"
+          />
+          <Text style={styles.inputHelp}>
+            Must match your registered account ID number
+          </Text>
+        </View>
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>License Number *</Text>
           <TextInput
@@ -416,6 +510,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   headerContainer: {
     padding: 20,
     paddingBottom: 10,
@@ -432,6 +537,27 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  userInfoCard: {
+    backgroundColor: '#e7f3ff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  userInfoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0056b3',
+    marginBottom: 6,
+  },
+  userInfoValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#007AFF',
+    fontFamily: 'monospace',
   },
   formContainer: {
     padding: 20,

@@ -37,6 +37,7 @@ interface IDCardData extends BaseDocumentData {
 }
 
 interface DrivingLicenseData extends BaseDocumentData {
+  idNumber?: string; // ADDED: ID number for driving license
   licenseNumber: string;
   dateOfIssue: string;
   dateOfExpiry: string;
@@ -53,40 +54,50 @@ type Props = {
   onClose: () => void;
 };
 
-// Helper to get available fields
+// FIXED: Helper to get available fields
 const getAvailableFields = (cardData: DocumentData | null): { key: string; label: string }[] => {
   if (!cardData) return [];
 
-  const commonFields = [
-    { key: 'fullName', label: 'Full Name' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-    
-  ];
-
-  if ('idNumber' in cardData) {
+  // For ID Card
+  if ('idNumber' in cardData && 'issuedDate' in cardData) {
     return [
-      ...commonFields.slice(0, 1),
+      { key: 'fullName', label: 'Full Name' },
       { key: 'idNumber', label: 'ID Number' },
-      ...commonFields.slice(1, 2),
+      { key: 'dateOfBirth', label: 'Date of Birth' },
       { key: 'issuedDate', label: 'Issued Date' },
-      ...commonFields.slice(2),
     ];
   }
 
+  // For Driving License - ALL FIELDS
   if ('licenseNumber' in cardData) {
-    return [
-      ...commonFields.slice(0, 1),
+    const fields = [
+      { key: 'fullName', label: 'Full Name' },
       { key: 'licenseNumber', label: 'License Number' },
-      ...commonFields.slice(1, 2),
+      { key: 'dateOfBirth', label: 'Date of Birth' },
       { key: 'dateOfIssue', label: 'Date of Issue' },
       { key: 'dateOfExpiry', label: 'Date of Expiry' },
       { key: 'vehicleClasses', label: 'Vehicle Classes' },
-      { key: 'bloodGroup', label: 'Blood Group' },
-      ...commonFields.slice(2),
     ];
+
+    // Add optional fields if they exist
+    if (cardData.idNumber) {
+      fields.splice(2, 0, { key: 'idNumber', label: 'NIC Number' });
+    }
+    if (cardData.bloodGroup) {
+      fields.push({ key: 'bloodGroup', label: 'Blood Group' });
+    }
+    if (cardData.address) {
+      fields.push({ key: 'address', label: 'Address' });
+    }
+
+    return fields;
   }
 
-  return commonFields;
+  // Fallback
+  return [
+    { key: 'fullName', label: 'Full Name' },
+    { key: 'dateOfBirth', label: 'Date of Birth' },
+  ];
 };
 
 // Generate random 12-char alphanumeric passkey
@@ -115,10 +126,8 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
       const fields = getAvailableFields(cardData);
       const initial: Record<string, boolean> = {};
       fields.forEach((field) => {
-        initial[field.key] =
-          field.key !== 'hash' &&
-          field.key !== 'bloodGroup' &&
-          field.key !== 'address';
+        // Select all fields by default except address
+        initial[field.key] = field.key !== 'address';
       });
       setSelectedFields(initial);
       setEncryptData(false);
@@ -129,56 +138,56 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
 
   const toBase64Url = (str: string) => btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const fromBase64Url = (str: string) => {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) str += '=';
-  return atob(str);
-};
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return atob(str);
+  };
 
   const handleGenerateQR = () => {
-  if (!cardData) return;
+    if (!cardData) return;
 
-  const data: Record<string, any> = {};
-  for (const key in selectedFields) {
-    if (selectedFields[key] && cardData[key as keyof DocumentData]) {
-      data[key] = cardData[key as keyof DocumentData];
+    const data: Record<string, any> = {};
+    for (const key in selectedFields) {
+      if (selectedFields[key] && cardData[key as keyof DocumentData]) {
+        const value = cardData[key as keyof DocumentData];
+        // Handle array fields like vehicleClasses
+        data[key] = Array.isArray(value) ? value.join(', ') : value;
+      }
     }
-  }
 
-  // ALWAYS ADD HASH — even if not in UI
-  if (cardData.hash) {
-    data.hash = cardData.hash;
-  }
+    // ALWAYS ADD HASH
+    if (cardData.hash) {
+      data.hash = cardData.hash;
+    }
 
-  let payload: string;
-  let newPasskey: string | null = null;
+    let payload: string;
+    let newPasskey: string | null = null;
 
-  if (encryptData) {
-    newPasskey = generatePasskey();
-    const jsonString = JSON.stringify(data);
-    const key = CryptoJS.enc.Utf8.parse(newPasskey.padEnd(16, '0'));
-    const encrypted = CryptoJS.AES.encrypt(jsonString, key, {
-      mode: CryptoJS.mode.ECB,
-      padding: CryptoJS.pad.Pkcs7,
-    }).toString();
+    if (encryptData) {
+      newPasskey = generatePasskey();
+      const jsonString = JSON.stringify(data);
+      const key = CryptoJS.enc.Utf8.parse(newPasskey.padEnd(16, '0'));
+      const encrypted = CryptoJS.AES.encrypt(jsonString, key, {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7,
+      }).toString();
 
-    // URL-safe Base64
-    payload = btoa(encrypted)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  } else {
-    payload = btoa(JSON.stringify(data, null, 2))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  }
+      payload = btoa(encrypted)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    } else {
+      payload = btoa(JSON.stringify(data, null, 2))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
 
-  setPasskey(newPasskey);
+    setPasskey(newPasskey);
 
-  // THIS IS THE FIX: Generate FULL URL
-  const verificationUrl = `https://myvault-verify.vercel.app/verify?data=${encodeURIComponent(payload)}`;
-  setQrValue(verificationUrl); // QR now contains the URL
-};
+    const verificationUrl = `https://myvault-verify.vercel.app/verify?data=${encodeURIComponent(payload)}`;
+    setQrValue(verificationUrl);
+  };
 
   const copyPasskey = () => {
     if (passkey) {
@@ -333,15 +342,6 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
                   </Text>
                 </View>
               )}
-
-              {/* {!encryptData && (
-                <View style={styles.plainDataBox}>
-                  <Text style={styles.plainDataTitle}>Data in QR (Plain Text):</Text>
-                  <Text style={styles.plainDataText} numberOfLines={10}>
-                    {qrValue}
-                  </Text>
-                </View>
-              )} */}
 
               <View style={styles.qrShareButtons}>
                 <TouchableOpacity style={styles.shareQrButton} onPress={handleShareQR}>
