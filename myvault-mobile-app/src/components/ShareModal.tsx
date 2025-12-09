@@ -13,18 +13,19 @@ import {
   Clipboard,
 } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
-import { Picker } from '@react-native-picker/picker';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import Share from 'react-native-share';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import CryptoJS from 'crypto-js';
 
-// Base interface for all documents
+// ────────────────────────────────
+// Updated Document Interfaces (Added A/L Result)
+// ────────────────────────────────
 interface BaseDocumentData {
   id: string;
   fullName: string;
-  dateOfBirth: string;
+  dateOfBirth?: string;
   hash: string;
   createdAt: string;
   updatedAt: string;
@@ -34,10 +35,11 @@ interface BaseDocumentData {
 interface IDCardData extends BaseDocumentData {
   idNumber: string;
   issuedDate: string;
+  dateOfBirth: string;
 }
 
 interface DrivingLicenseData extends BaseDocumentData {
-  idNumber?: string; // ADDED: ID number for driving license
+  idNumber?: string;
   licenseNumber: string;
   dateOfIssue: string;
   dateOfExpiry: string;
@@ -46,19 +48,52 @@ interface DrivingLicenseData extends BaseDocumentData {
   vehicleClasses?: string[];
 }
 
-type DocumentData = IDCardData | DrivingLicenseData;
+interface ALResultData extends BaseDocumentData {
+  year: string;
+  indexNumber: string;
+  stream: string;
+  zScore: string;
+  subjects: { subjectCode: string; result: string }[];
+  generalTest: string;
+  generalEnglish: string;
+  districtRank: string;
+  islandRank: string;
+}
 
+type DocumentData = IDCardData | DrivingLicenseData | ALResultData;
+
+// ────────────────────────────────
+// Props
+// ────────────────────────────────
 type Props = {
   visible: boolean;
   cardData: DocumentData | null;
   onClose: () => void;
 };
 
-// FIXED: Helper to get available fields
+// ────────────────────────────────
+// Helper: Get available fields for sharing
+// ────────────────────────────────
 const getAvailableFields = (cardData: DocumentData | null): { key: string; label: string }[] => {
   if (!cardData) return [];
 
-  // For ID Card
+  // A/L Results Certificate
+  if ('year' in cardData && 'indexNumber' in cardData && 'zScore' in cardData) {
+    return [
+      { key: 'fullName', label: 'Full Name' },
+      { key: 'year', label: 'Examination Year' },
+      { key: 'indexNumber', label: 'Index Number' },
+      { key: 'stream', label: 'Subject Stream' },
+      { key: 'zScore', label: 'Z-Score' },
+      { key: 'subjects', label: 'Subject Results' },
+      { key: 'generalTest', label: 'Common General Test' },
+      { key: 'generalEnglish', label: 'General English' },
+      { key: 'districtRank', label: 'District Rank' },
+      { key: 'islandRank', label: 'Island Rank' },
+    ];
+  }
+
+  // ID Card
   if ('idNumber' in cardData && 'issuedDate' in cardData) {
     return [
       { key: 'fullName', label: 'Full Name' },
@@ -68,7 +103,7 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
     ];
   }
 
-  // For Driving License - ALL FIELDS
+  // Driving License
   if ('licenseNumber' in cardData) {
     const fields = [
       { key: 'fullName', label: 'Full Name' },
@@ -79,7 +114,6 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
       { key: 'vehicleClasses', label: 'Vehicle Classes' },
     ];
 
-    // Add optional fields if they exist
     if (cardData.idNumber) {
       fields.splice(2, 0, { key: 'idNumber', label: 'NIC Number' });
     }
@@ -93,14 +127,12 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
     return fields;
   }
 
-  // Fallback
-  return [
-    { key: 'fullName', label: 'Full Name' },
-    { key: 'dateOfBirth', label: 'Date of Birth' },
-  ];
+  return [];
 };
 
-// Generate random 12-char alphanumeric passkey
+// ────────────────────────────────
+// Generate random 12-char passkey
+// ────────────────────────────────
 const generatePasskey = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
@@ -112,7 +144,9 @@ const generatePasskey = (): string => {
 
 const VERIFICATION_URL = 'https://myvault-verify.vercel.app/verify';
 
-// EXPORTED COMPONENT
+// ────────────────────────────────
+// MAIN COMPONENT
+// ────────────────────────────────
 export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
   const [selectedFields, setSelectedFields] = useState<Record<string, boolean>>({});
   const [encryptData, setEncryptData] = useState(false);
@@ -120,14 +154,13 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
   const [qrValue, setQrValue] = useState<string | null>(null);
   const viewShotRef = useRef<ViewShot>(null);
 
-  // Initialize selected fields
+  // Reset state when modal opens
   React.useEffect(() => {
     if (visible && cardData) {
       const fields = getAvailableFields(cardData);
       const initial: Record<string, boolean> = {};
       fields.forEach((field) => {
-        // Select all fields by default except address
-        initial[field.key] = field.key !== 'address';
+        initial[field.key] = true; // Select all by default for A/L too
       });
       setSelectedFields(initial);
       setEncryptData(false);
@@ -136,26 +169,26 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
     }
   }, [visible, cardData]);
 
-  const toBase64Url = (str: string) => btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const fromBase64Url = (str: string) => {
-    str = str.replace(/-/g, '+').replace(/_/g, '/');
-    while (str.length % 4) str += '=';
-    return atob(str);
-  };
-
   const handleGenerateQR = () => {
     if (!cardData) return;
 
     const data: Record<string, any> = {};
+
     for (const key in selectedFields) {
-      if (selectedFields[key] && cardData[key as keyof DocumentData]) {
-        const value = cardData[key as keyof DocumentData];
-        // Handle array fields like vehicleClasses
-        data[key] = Array.isArray(value) ? value.join(', ') : value;
+      if (selectedFields[key]) {
+        const value = (cardData as any)[key];
+
+        if (key === 'subjects' && Array.isArray(value)) {
+          data[key] = value.map((s: any) => `${s.subjectCode}: ${s.result}`).join(', ');
+        } else if (Array.isArray(value)) {
+          data[key] = value.join(', ');
+        } else {
+          data[key] = value || '-';
+        }
       }
     }
 
-    // ALWAYS ADD HASH
+    // Always include hash
     if (cardData.hash) {
       data.hash = cardData.hash;
     }
@@ -172,19 +205,12 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
         padding: CryptoJS.pad.Pkcs7,
       }).toString();
 
-      payload = btoa(encrypted)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+      payload = btoa(encrypted).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     } else {
-      payload = btoa(JSON.stringify(data, null, 2))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+      payload = btoa(JSON.stringify(data, null, 2)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
     setPasskey(newPasskey);
-
     const verificationUrl = `https://myvault-verify.vercel.app/verify?data=${encodeURIComponent(payload)}`;
     setQrValue(verificationUrl);
   };
@@ -265,7 +291,8 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
               <Text style={styles.sectionLabel}>Select fields to share:</Text>
               <ScrollView style={styles.fieldsScrollView}>
                 {availableFields.map((field) => {
-                  if (cardData && !cardData[field.key as keyof DocumentData]) return null;
+                  const hasValue = cardData && (cardData as any)[field.key] !== undefined;
+                  if (!hasValue) return null;
                   return (
                     <View key={field.key} style={styles.checkboxRow}>
                       <CheckBox
@@ -320,7 +347,7 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
                     logoBackgroundColor="white"
                   />
                   <Text style={styles.qrLabel}>
-                    {encryptData ? 'Encrypted Data' : 'Document Data'}
+                    {encryptData ? 'Encrypted Document' : 'Document Data'}
                   </Text>
                   {encryptData && (
                     <Text style={styles.encryptedLabel}>Locked (Requires Passkey)</Text>
@@ -365,7 +392,9 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
   );
 };
 
-// STYLES
+// ────────────────────────────────
+// Styles (unchanged)
+// ────────────────────────────────
 const styles = StyleSheet.create({
   shareModalOverlay: {
     flex: 1,
@@ -518,26 +547,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
-  },
-  plainDataBox: {
-    marginTop: 20,
-    backgroundColor: '#f9fafb',
-    padding: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  plainDataTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  plainDataText: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 12,
-    color: '#1f2937',
-    lineHeight: 18,
   },
   qrShareButtons: {
     flexDirection: 'row',

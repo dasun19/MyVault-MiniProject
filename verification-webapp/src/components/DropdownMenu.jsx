@@ -49,7 +49,7 @@ const DropdownMenu = () => {
 
     const menuItems = [
         { label: 'Settings', icon: Cog6ToothIcon, route: '/settings' },
-        { label: 'Admin Login', icon: ShieldCheckIcon, route: '/admin/login' },
+        { label: 'Login', icon: ShieldCheckIcon, route: '/admin/login' },
         { label: 'Guide', icon: BookOpenIcon, route: '/guide' },
         { label: 'About', icon: InformationCircleIcon, route: '/about' },
     ]

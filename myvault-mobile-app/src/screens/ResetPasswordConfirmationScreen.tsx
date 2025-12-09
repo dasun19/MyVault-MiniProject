@@ -6,10 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
+import { useTranslation } from 'react-i18next'; 
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPasswordConfirmation">;
 
 const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
+  const { t } = useTranslation(); 
   const { email } = route.params;
   const [verificationCode, setVerificationCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -19,22 +21,22 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
   const handleSubmit = async () => {
     // Validation
     if (!verificationCode.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      Alert.alert("Error", "Please fill in all fields.");
+      Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.fillAllFields'));
       return;
     }
 
     if (verificationCode.length !== 5) {
-      Alert.alert("Error", "Verification code must be 5 digits.");
+      Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.codeMustBe5Digits'));
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters.");
+      Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.passwordTooShort'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
+      Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.passwordsDoNotMatch'));
       return;
     }
 
@@ -55,16 +57,16 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
 
       if (res.ok && data.success) {
         Alert.alert(
-          "Success",
-          "Password reset successful! You can now login.",
-          [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+          t('resetPassword.successTitle'),
+          t('resetPassword.successMessage'),
+          [{ text: t('common.ok'), onPress: () => navigation.navigate("Login") }]
         );
       } else {
-        Alert.alert("Error", data.message || "Unable to reset password.");
+        Alert.alert(t('resetPassword.errorTitle'), data.message || t('resetPassword.unableToReset'));
       }
     } catch (err) {
       console.error("Reset password error:", err);
-      Alert.alert("Error", "Network error. Check your connection.");
+      Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.networkError'));
     } finally {
       setLoading(false);
     }
@@ -77,13 +79,13 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.mainContainer}>
       <View style={styles.container}>
-        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.title}>{t('resetPassword.title')}</Text>
         <Text style={styles.subtitle}>
-          Enter the 5-digit code sent to {email}
+          {t('resetPassword.subtitle', { email })}
         </Text>
 
         <TextInput
-          placeholder="Verification Code"
+          placeholder={t('resetPassword.verificationCodePlaceholder')}
           value={verificationCode}
           onChangeText={setVerificationCode}
           style={styles.input}
@@ -93,7 +95,7 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <TextInput
-          placeholder="New Password"
+          placeholder={t('resetPassword.newPasswordPlaceholder')}
           value={newPassword}
           onChangeText={setNewPassword}
           style={styles.input}
@@ -102,7 +104,7 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
         />
 
         <TextInput
-          placeholder="Confirm Password"
+          placeholder={t('resetPassword.confirmPasswordPlaceholder')}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           style={styles.input}
@@ -116,7 +118,7 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? "Resetting..." : "Reset Password"}
+            {loading ? t('resetPassword.resetting') : t('resetPassword.resetButton')}
           </Text>
         </TouchableOpacity>
 
@@ -124,7 +126,7 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
           style={styles.backButton}
           onPress={handleBackToForgot}
         >
-          <Text style={styles.backText}>Back to Forgot Password</Text>
+          <Text style={styles.backText}>{t('resetPassword.backToForgot')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

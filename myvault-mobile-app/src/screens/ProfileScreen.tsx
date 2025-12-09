@@ -15,6 +15,7 @@ import { User, Mail, Phone, CreditCard, Calendar, LogOut, Trash2, Save } from 'l
 import AppHeader from '../components/AppHeader';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
+import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -23,6 +24,8 @@ type Props = {
 };
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
+  const { t } = useTranslation(); // ✅ ADD THIS
+  
   const [user, setUser] = useState<any>(null);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -72,13 +75,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem('userData', JSON.stringify(data.user));
         setUser(data.user);
         setIsEditing(false);
-        Alert.alert('Success', 'Profile updated successfully');
+        Alert.alert(t('profile.successTitle'), t('profile.profileUpdated'));
       } else {
-        Alert.alert('Update Failed', data.message);
+        Alert.alert(t('profile.updateFailed'), data.message);
       }
     } catch (error) {
       console.log(error);
-      Alert.alert('Error', 'Could not update profile');
+      Alert.alert(t('profile.errorTitle'), t('profile.couldNotUpdate'));
     } finally {
       setUpdating(false);
     }
@@ -86,12 +89,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const deleteAccount = async () => {
     Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. Are you sure you want to delete your account?',
+      t('profile.deleteAccountTitle'),
+      t('profile.deleteAccountMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('profile.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -112,15 +115,14 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('profile.logoutTitle'), t('profile.logoutMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Logout',
+        text: t('profile.logout'),
         style: 'destructive',
         onPress: async () => {
           setLoggingOut(true);
           try {
-            // Clear all auth-related data but preserve documents
             await AsyncStorage.multiRemove([
               'authToken',
               'userData',
@@ -133,14 +135,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             
             console.log('✅ Logout complete - navigating to Welcome');
             
-            // Use reset to clear navigation stack completely
             navigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],
             });
           } catch (error) {
             console.error('❌ Logout error:', error);
-            Alert.alert('Error', 'Failed to log out. Please try again.');
+            Alert.alert(t('profile.errorTitle'), t('profile.logoutFailed'));
           } finally {
             setLoggingOut(false);
           }
@@ -151,7 +152,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const toggleEdit = () => {
     if (isEditing) {
-      // Cancel editing - reset values
       setFullName(user?.fullName || '');
       setEmail(user?.email || '');
       setPhone(user?.phoneNumber || '');
@@ -162,10 +162,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <AppHeader title="Profile" />
+        <AppHeader title={t('profile.title')} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <Text style={styles.loadingText}>{t('profile.loadingProfile')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -173,7 +173,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader title="Profile" />
+      <AppHeader title={t('profile.title')} />
       
       <ScrollView 
         style={styles.scrollView}
@@ -190,26 +190,26 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             onPress={toggleEdit}
           >
             <Text style={styles.editButtonText}>
-              {isEditing ? 'Cancel' : 'Edit Profile'}
+              {isEditing ? t('profile.cancel') : t('profile.editProfile')}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Profile Information Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Personal Information</Text>
+          <Text style={styles.cardTitle}>{t('profile.personalInformation')}</Text>
 
           {/* Full Name */}
           <View style={styles.inputGroup}>
             <View style={styles.inputLabel}>
               <User size={20} color="#666" />
-              <Text style={styles.labelText}>Full Name</Text>
+              <Text style={styles.labelText}>{t('profile.fullName')}</Text>
             </View>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Full Name"
+              placeholder={t('profile.fullName')}
               editable={isEditing}
             />
           </View>
@@ -218,13 +218,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <View style={styles.inputLabel}>
               <Mail size={20} color="#666" />
-              <Text style={styles.labelText}>Email</Text>
+              <Text style={styles.labelText}>{t('profile.email')}</Text>
             </View>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
               value={email}
               onChangeText={setEmail}
-              placeholder="Email"
+              placeholder={t('profile.email')}
               keyboardType="email-address"
               editable={isEditing}
             />
@@ -234,13 +234,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <View style={styles.inputLabel}>
               <Phone size={20} color="#666" />
-              <Text style={styles.labelText}>Phone Number</Text>
+              <Text style={styles.labelText}>{t('profile.phoneNumber')}</Text>
             </View>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
               value={phoneNumber}
               onChangeText={setPhone}
-              placeholder="Phone Number"
+              placeholder={t('profile.phoneNumber')}
               keyboardType="phone-pad"
               editable={isEditing}
             />
@@ -257,7 +257,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               ) : (
                 <>
                   <Save size={20} color="#fff" />
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -266,12 +266,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Account Details Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Details</Text>
+          <Text style={styles.cardTitle}>{t('profile.accountDetails')}</Text>
 
           <View style={styles.detailRow}>
             <View style={styles.detailLabel}>
               <CreditCard size={20} color="#666" />
-              <Text style={styles.detailLabelText}>National ID</Text>
+              <Text style={styles.detailLabelText}>{t('profile.nationalId')}</Text>
             </View>
             <Text style={styles.detailValue}>{user?.idNumber || 'N/A'}</Text>
           </View>
@@ -279,7 +279,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.detailRow}>
             <View style={styles.detailLabel}>
               <Calendar size={20} color="#666" />
-              <Text style={styles.detailLabelText}>Member Since</Text>
+              <Text style={styles.detailLabelText}>{t('profile.memberSince')}</Text>
             </View>
             <Text style={styles.detailValue}>
               {user?.createdAt
@@ -301,7 +301,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             ) : (
               <>
                 <LogOut size={20} color="#fff" />
-                <Text style={styles.buttonText}>Log Out</Text>
+                <Text style={styles.buttonText}>{t('profile.logOut')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -311,11 +311,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             onPress={deleteAccount}
           >
             <Trash2 size={20} color="#fff" />
-            <Text style={styles.buttonText}>Delete Account</Text>
+            <Text style={styles.buttonText}>{t('profile.deleteAccount')}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom spacing */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>

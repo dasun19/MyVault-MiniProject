@@ -13,9 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppHeader from '../components/AppHeader';
-import { User, FileText, Shield,  ShieldCheck,Lock,Link, Link2, CircleCheck,QrCode, Share2,Send} from 'lucide-react-native';
-
-
+import { User, FileText, Shield, ShieldCheck, Lock, Link, Link2, CircleCheck, QrCode, Share2, Send } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -23,16 +22,14 @@ type Props = {
     navigation: HomeScreenNavigationProp;
 }
 
-const HomeScreen:React.FC<Props> = ({ navigation }) => {
-
-    // Add state for JWT verifier modal
+const HomeScreen: React.FC<Props> = ({ navigation }) => {
+    const { t } = useTranslation(); // ✅ ADD THIS
+    
     const [showJWTVerifier, setShowJWTVerifier] = useState(false);
-    //Add animated states
-    const [ fadeAnim ] = useState(new Animated.Value(1));
-    const [ showFirstAd, setShowFirstAd ] = useState(true); 
+    const [fadeAnim] = useState(new Animated.Value(1));
+    const [showFirstAd, setShowFirstAd] = useState(true); 
       
-    // Add useEffect for animation
-    useEffect (() => {
+    useEffect(() => {
         const interval = setInterval(() => {
             Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -46,46 +43,46 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                     useNativeDriver: true,
                 }).start();
             });
-        }, 5000); // Swap every 3 seconds
+        }, 5000);
 
         return () => clearInterval(interval);
     }, [fadeAnim]);
 
     return (
-        <SafeAreaView style = {styles.container} >
+        <SafeAreaView style={styles.container}>
             <AppHeader />
             <ScrollView showsVerticalScrollIndicator={false}>
 
-            <View style={styles.advertisements}>
-            <Animated.View style={[styles.advertisement, { opacity: fadeAnim }]}>
-                <Text style={styles.adText}>
-                        {showFirstAd
-                         ? 'Your documents, anytime, anywhere'
-                         : 'Share and verify your documents securely'}
-                </Text>
-            </Animated.View>
-            </View>
+                <View style={styles.advertisements}>
+                    <Animated.View style={[styles.advertisement, { opacity: fadeAnim }]}>
+                        <Text style={styles.adText}>
+                            {showFirstAd
+                                ? t('home.adText1')
+                                : t('home.adText2')}
+                        </Text>
+                    </Animated.View>
+                </View>
 
-       {/* Quick Actions Section */}
+                {/* Quick Actions Section */}
                 <View style={styles.quickActionsSection}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
+                    <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
                     
                     <View style={styles.actionsGrid}>
                         {/* Navigate to Documents */}
                         <TouchableOpacity 
                             style={styles.actionCard}
                             onPress={() => {
-                                    navigation.navigate('BottomTabs', { 
+                                navigation.navigate('BottomTabs', { 
                                     screen: 'My Documents' 
-                                     })}}
-                                    
+                                })
+                            }}
                         >
                             <View style={styles.actionIconContainer}>
                                 <FileText size={35} color="#2563eb" />
                             </View>
-                            <Text style={styles.actionTitle}>My Documents</Text>
+                            <Text style={styles.actionTitle}>{t('home.myDocuments')}</Text>
                             <Text style={styles.actionSubtitle}>
-                                View and manage your documents
+                                {t('home.myDocumentsSubtitle')}
                             </Text>
                         </TouchableOpacity>
 
@@ -94,145 +91,53 @@ const HomeScreen:React.FC<Props> = ({ navigation }) => {
                             onPress={() => navigation.navigate('Profile')}
                         >
                             <View style={styles.actionIconContainer}>
-                                 <User size={38} color="#2563eb" />
+                                <User size={38} color="#2563eb" />
                             </View>
-                            <Text style={styles.actionTitle}>Profile</Text>
+                            <Text style={styles.actionTitle}>{t('home.profile')}</Text>
                             <Text style={styles.actionSubtitle}>
-                                View and manage your Profile
+                                {t('home.profileSubtitle')}
                             </Text>
-                        </TouchableOpacity>
-                            </View>
-                         </View>
-                    {/* 
-                        JWT Verification
-                        <TouchableOpacity 
-                            style={styles.actionCard}
-                            onPress={() => setShowJWTVerifier(true)}
-                        >
-                            <View style={styles.actionIconContainer}>
-                                <Text style={styles.actionIcon}>🔍</Text>
-                            </View>
-                            <Text style={styles.actionTitle}>Verify Documents</Text>
-                            <Text style={styles.actionSubtitle}>
-                                Scan or verify hashes
-                            </Text>
-                        </TouchableOpacity> */}
-                
-
-                {/* Verification Section
-                <View style={styles.verificationSection}>
-                    <Text style={styles.sectionTitle}>Document Verification</Text>
-                    
-                    <View style={styles.verificationCard}>
-                        <View style={styles.verificationHeader}>
-                            <View style={styles.securityIconContainer}>
-                                <Text style={styles.securityIcon}>🔐</Text>
-                            </View>
-                            <View style={styles.verificationContent}>
-                                <Text style={styles.verificationTitle}>Secure Blockchain Verification</Text>
-                                <Text style={styles.verificationSubtitle}>
-                                    Verify the authenticity of shared documents
-                                </Text>
-                            </View>
-                        </View>
-                        
-                        <View style={styles.featuresList}>
-                            <View style={styles.featureItem}>
-                                <Text style={styles.featureBullet}>•</Text>
-                                <Text style={styles.featureText}>
-                                    Scan QR codes
-                                </Text>
-                            </View>
-                            <View style={styles.featureItem}>
-                                <Text style={styles.featureBullet}>•</Text>
-                                <Text style={styles.featureText}>
-                                    Verify hashes through blockchain
-                                </Text>
-                            </View>
-                            <View style={styles.featureItem}>
-                                <Text style={styles.featureBullet}>•</Text>
-                                <Text style={styles.featureText}>
-                                    Check token expiration status
-                                </Text>
-                            </View>
-                            <View style={styles.featureItem}>
-                                <Text style={styles.featureBullet}>•</Text>
-                                <Text style={styles.featureText}>
-                                    View verified document data securely
-                                </Text>
-                            </View>
-                        </View>
-
-                        <TouchableOpacity 
-                            style={styles.verifyButton}
-                            onPress={() => setShowJWTVerifier(true)}
-                        >
-                            <Text style={styles.verifyButtonText}>Start Verification</Text>
                         </TouchableOpacity>
                     </View>
-                </View> */}
+                </View>
 
                 {/* Security Information Section */}
                 <View style={styles.securityInfoSection}>
-                    <Text style={styles.sectionTitle}>Key Features of MyVault</Text>
+                    <Text style={styles.sectionTitle}>{t('home.keyFeatures')}</Text>
                     
                     <View style={styles.securityInfoCard}>
-                        
-                        
                         <View style={styles.securityFeature}>
-                            <Shield size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
+                            <Shield size={35} color="#2563eb" style={styles.securityFeatureIcon} />
                             <View style={styles.securityFeatureContent}>
-                                <Text style={styles.securityFeatureTitle}>Your Identity, Your Control</Text>
+                                <Text style={styles.securityFeatureTitle}>{t('home.feature1Title')}</Text>
                                 <Text style={styles.securityFeatureDesc}>
-                                    Keep all your credentials safely on your own device — no central servers, no third-party access.
+                                    {t('home.feature1Desc')}
                                 </Text>
                             </View>
                         </View>
 
                         <View style={styles.securityFeature}>
-                            <CircleCheck size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
+                            <CircleCheck size={35} color="#2563eb" style={styles.securityFeatureIcon} />
                             <View style={styles.securityFeatureContent}>
-                                <Text style={styles.securityFeatureTitle}>Verified by Blockchain</Text>
+                                <Text style={styles.securityFeatureTitle}>{t('home.feature2Title')}</Text>
                                 <Text style={styles.securityFeatureDesc}>
-                                    Ensure authenticity and tamper-proof verification.
+                                    {t('home.feature2Desc')}
                                 </Text>
                             </View>
                         </View>
 
                         <View style={styles.securityFeature}>
-                             <QrCode size={35} color="#2563eb" style={styles.securityFeatureIcon}/>
+                            <QrCode size={35} color="#2563eb" style={styles.securityFeatureIcon} />
                             <View style={styles.securityFeatureContent}>
-                                <Text style={styles.securityFeatureTitle}>Encrypted QR Code Sharing</Text>
+                                <Text style={styles.securityFeatureTitle}>{t('home.feature3Title')}</Text>
                                 <Text style={styles.securityFeatureDesc}>
-                                    Securely share your identity or documents using encrypted QR codes.
+                                    {t('home.feature3Desc')}
                                 </Text>
                             </View>
                         </View>
                     </View>
                 </View>
             </ScrollView>
-
-            {/* Verifier Modal
-            <Modal
-                visible={showJWTVerifier}
-                animationType="slide"
-                presentationStyle="fullScreen"
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity 
-                            style={styles.closeButton}
-                            onPress={() => setShowJWTVerifier(false)}
-                        >
-                            <Text style={styles.closeButtonText}>✕ Close</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.modalTitle}></Text>
-                        <View style={styles.placeholder} />
-                    </View>
-                    
-                    <JWTVerifier onClose={() => setShowJWTVerifier(false)} />
-                </View>
-            </Modal> */}
         </SafeAreaView>
     );
 };
@@ -268,32 +173,32 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     advertisements: {
-    backgroundColor: '#2563eb',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    width: '95%',
-    marginLeft: 12,
-    height: 150,
-  },
-  advertisement: { // Add this new style
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-  },
-  adText: {
-    fontSize: 25,
-    fontWeight: '500',
-    color: '#fffefeff',
-    textAlign: 'center',
-  },
+        backgroundColor: '#2563eb',
+        padding: 15,
+        borderRadius: 10,
+        marginVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        width: '95%',
+        marginLeft: 12,
+        height: 150,
+    },
+    advertisement: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '80%',
+    },
+    adText: {
+        fontSize: 25,
+        fontWeight: '500',
+        color: '#fffefeff',
+        textAlign: 'center',
+    },
     quickActionsSection: {
         margin: 20,
         marginTop: 10,
@@ -345,55 +250,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 16,
     },
-    // verificationSection: {
-    //     margin: 20,
-    //     marginTop: 10,
-    // },
-    // verificationCard: {
-    //     backgroundColor: 'white',
-    //     borderRadius: 16,
-    //     padding: 20,
-    //     shadowColor: '#000',
-    //     shadowOffset: { width: 0, height: 4 },
-    //     shadowOpacity: 0.1,
-    //     shadowRadius: 8,
-    //     elevation: 4,
-    //     borderWidth: 1,
-    //     borderColor: '#e3f2fd',
-    // },
-    // verificationHeader: {
-    //     flexDirection: 'row',
-    //     alignItems: 'center',
-    //     marginBottom: 16,
-    // },
-    // securityIconContainer: {
-    //     width: 60,
-    //     height: 60,
-    //     borderRadius: 30,
-    //     backgroundColor: '#f0f8ff',
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    //     marginRight: 16,
-    //     borderWidth: 2,
-    //     borderColor: '#007AFF',
-    // },
-    // securityIcon: {
-    //     fontSize: 24,
-    // },
-    // verificationContent: {
-    //     flex: 1,
-    // },
-    // verificationTitle: {
-    //     fontSize: 18,
-    //     fontWeight: '600',
-    //     color: '#1a1a1a',
-    //     marginBottom: 4,
-    // },
-    // verificationSubtitle: {
-    //     fontSize: 14,
-    //     color: '#666',
-    //     lineHeight: 18,
-    // },
     featuresList: {
         marginBottom: 20,
     },
@@ -423,7 +279,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 4,
-       
     },
     verifyButtonText: {
         color: 'white',
@@ -433,10 +288,9 @@ const styles = StyleSheet.create({
     securityInfoSection: {
         margin: 20,
         marginTop: 10,
-        
     },
     securityInfoCard: {
-       flex: 1,
+        flex: 1,
         backgroundColor: 'white',
         borderRadius: 12,
         padding: 16,

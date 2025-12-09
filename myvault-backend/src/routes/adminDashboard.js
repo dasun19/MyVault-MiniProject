@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/authMiddleware');
 
 // Admin Dashboard Routes
-router.get('/dashboard', authMiddleware, async (req, res) => {
+router.get('/dashboard', requireAdmin, async (req, res) => {
     try {
         res.json({
             success: true,

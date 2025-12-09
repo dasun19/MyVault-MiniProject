@@ -2,13 +2,14 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const Web3 = require("web3");
-
 const connectDB = require("./src/utils/database");
 const authRoutes = require("./src/routes/authRoutes");
 const adminAuth = require("./src/routes/adminAuth");
+const authorityAuth = require("./src/routes/authorityAuth");
 const adminDashboard = require("./src/routes/adminDashboard");
+const authorityDashboard = require("./src/routes/authorityDashboard");
 const HashRegistryABI = require("./artifacts/contracts/HashRegistry.sol/HashRegistry.json").abi;
-const { requireAdmin } = require("./src/middleware/authMiddleware");
+const { requireAdmin, requireAuthority } = require("./src/middleware/authMiddleware");
 
 
 const app = express();
@@ -75,10 +76,18 @@ if (adminAuth && typeof adminAuth === 'function') {
     app.use("/api/admin", adminAuth);
 }
 
+// Authority /login and /logout
+app.use("/api/authority", authorityAuth);
+
+// Authority account create
+app.use("/api/admin", adminAuth);
+
 // Mount admin dashboard routes
-if (adminDashboard && typeof adminDashboard === 'function') {
-    app.use("/api/admin", adminDashboard);
-}
+//app.get("/api/admin/dashboard",requireAdmin,(req,res) => res.json({ message: "Admin Dashboard"}));
+//app.get("/api/authority/dashboard", requireAuthority, (req, res) => res.json({ message: "Authority Dashboard" }));
+
+app.use("/api/admin", adminDashboard);
+app.use("/api/authority", authorityDashboard);
 
 app.post("/hash/sha256", (req, res) => {
   const { data } = req.body;

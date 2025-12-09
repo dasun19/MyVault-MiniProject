@@ -12,13 +12,16 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next'; 
 
 const CreateAccountScreen = ({ navigation }) => {
+  const { t } = useTranslation(); 
+  
   const [formData, setFormData] = useState({
     fullName: '',
     idNumber: '',
     email: '',
-    PhoneNumber: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: ''
   });
@@ -50,46 +53,44 @@ const CreateAccountScreen = ({ navigation }) => {
     const newErrors = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = t('createAccount.errors.fullNameRequired');
     }
 
-     if (!formData.idNumber.trim()) {
-      newErrors.idNumber = 'ID number is required';
-      } else if (!/^\d{9}[vVxX]$|^\d{12}$/.test(formData.idNumber)) {
-  newErrors.idNumber = 'Enter a valid Sri Lankan ID number (e.g., 123456789V or 200012345678)';
+    if (!formData.idNumber.trim()) {
+      newErrors.idNumber = t('createAccount.errors.idNumberRequired');
+    } else if (!/^\d{9}[vVxX]$|^\d{12}$/.test(formData.idNumber)) {
+      newErrors.idNumber = t('createAccount.errors.idNumberInvalid');
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
-  } else if (formData.password.length < 8) {
-       newErrors.password = 'Password must be at least 8 characters';
-  }
-
+      newErrors.password = t('createAccount.errors.passwordRequired');
+    } else if (formData.password.length < 8) {
+      newErrors.password = t('createAccount.errors.passwordTooShort');
+    }
     // rules (letters + numbers)
     else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain letters and numbers';
-  }
+      newErrors.password = t('createAccount.errors.passwordWeak');
+    }
 
     // Phone number validation
     if (!formData.phoneNumber) {
-      newErrors.phoneNumber = 'Phone number is required';
+      newErrors.phoneNumber = t('createAccount.errors.phoneNumberRequired');
     } else if (!/^\d{9}$/.test(formData.phoneNumber)) {
-        newErrors.phoneNumber = 'Enter phone number without country code (9 digits)';
+      newErrors.phoneNumber = t('createAccount.errors.phoneNumberInvalid');
     }
 
     // Email validation
-  if (!formData.email) {
-      newErrors.email = 'Email is required';
+    if (!formData.email) {
+      newErrors.email = t('createAccount.errors.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    newErrors.email = 'Invalid email format';
-  }
-
+      newErrors.email = t('createAccount.errors.emailInvalid');
+    }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your Password';
+      newErrors.confirmPassword = t('createAccount.errors.confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('createAccount.errors.passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -112,25 +113,24 @@ const CreateAccountScreen = ({ navigation }) => {
           idNumber: formData.idNumber,
           email: formData.email,
           phoneNumber: fullPhoneNumber,
-          password: formData.password // This will be hashed on the backend
+          password: formData.password
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Registration successful, save email and navigate to verification
         await AsyncStorage.setItem('registrationEmail', formData.email);
         Alert.alert(
-          'Registration Successful',
-          'Please check your email to verify your account.',
-          [{ text: 'OK', onPress: () => navigation.navigate('EmailVerification') }]
+          t('createAccount.registrationSuccessTitle'),
+          t('createAccount.registrationSuccessMessage'),
+          [{ text: t('common.ok'), onPress: () => navigation.navigate('EmailVerification') }]
         );
       } else {
-        Alert.alert('Registration Failed', data.message || 'Registration failed');
+        Alert.alert(t('createAccount.registrationFailedTitle'), data.message || t('createAccount.registrationFailedTitle'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Network error. Please try again.');
+      Alert.alert(t('createAccount.errorTitle'), t('createAccount.networkError'));
     } finally {
       setIsLoading(false);
     }
@@ -143,17 +143,17 @@ const CreateAccountScreen = ({ navigation }) => {
     >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join MyVault to manage your digital documents</Text>
+          <Text style={styles.title}>{t('createAccount.title')}</Text>
+          <Text style={styles.subtitle}>{t('createAccount.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           {/* Full Name */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>{t('createAccount.fullName')}</Text>
             <TextInput
               style={[styles.input, errors.fullName && styles.inputError]}
-              placeholder="Enter your full name"
+              placeholder={t('createAccount.fullNamePlaceholder')}
               value={formData.fullName}
               onChangeText={(text) => handleChange('fullName', text)}
               autoCapitalize="words"
@@ -163,26 +163,24 @@ const CreateAccountScreen = ({ navigation }) => {
 
           {/* ID Number */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>National ID Number</Text>
+            <Text style={styles.label}>{t('createAccount.idNumber')}</Text>
             <TextInput
               style={[styles.input, errors.idNumber && styles.inputError]}
-              placeholder="Enter your national ID number"
+              placeholder={t('createAccount.idNumberPlaceholder')}
               value={formData.idNumber}
               onChangeText={(text) => handleChange('idNumber', text)}
               keyboardType="default"  
               autoCapitalize="characters"
-              
             />
             {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
           </View>
 
-
           {/* Email */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={styles.label}>{t('createAccount.email')}</Text>
             <TextInput
               style={[styles.input, errors.email && styles.inputError]}
-              placeholder="Enter your email"
+              placeholder={t('createAccount.emailPlaceholder')}
               value={formData.email}
               onChangeText={(text) => handleChange('email', text)}
               keyboardType="email-address"
@@ -193,21 +191,20 @@ const CreateAccountScreen = ({ navigation }) => {
 
           {/* Phone Number */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>{t('createAccount.phoneNumber')}</Text>
             <View style={styles.phoneContainer}>
               <Picker 
                 selectedValue={countryCode}
                 style={styles.picker}
                 onValueChange={(itemValue) => setCountryCode(itemValue)}
-                >
-                  <Picker.Item label="+94 (LK)" value="+94" />
-                </Picker>
+              >
+                <Picker.Item label="+94 (LK)" value="+94" />
+              </Picker>
               <TextInput
                 style={[styles.phoneInput, errors.phoneNumber && styles.inputError]}
-                placeholder="Enter phone number"
+                placeholder={t('createAccount.phoneNumberPlaceholder')}
                 value={formData.phoneNumber}
                 onChangeText={(text) => handleChange('phoneNumber', text)}
-               
               />
             </View>
             {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
@@ -215,11 +212,11 @@ const CreateAccountScreen = ({ navigation }) => {
 
           {/* Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Create Password</Text>
+            <Text style={styles.label}>{t('createAccount.createPassword')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.passwordInput, errors.password && styles.inputError]}
-                placeholder="Enter a password"
+                placeholder={t('createAccount.passwordPlaceholder')}
                 value={formData.password}
                 onChangeText={(text) => handleChange('password', text)}
                 secureTextEntry={!showPassword}
@@ -237,11 +234,11 @@ const CreateAccountScreen = ({ navigation }) => {
 
           {/* Confirm Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={styles.label}>{t('createAccount.confirmPassword')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
-                placeholder="Confirm your Password"
+                placeholder={t('createAccount.confirmPasswordPlaceholder')}
                 value={formData.confirmPassword}
                 onChangeText={(text) => handleChange('confirmPassword', text)}
                 secureTextEntry={!showConfirmPassword}
@@ -263,7 +260,7 @@ const CreateAccountScreen = ({ navigation }) => {
             disabled={isLoading}
           >
             <Text style={styles.submitButtonText}>
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? t('createAccount.creatingAccount') : t('createAccount.createAccountButton')}
             </Text>
           </TouchableOpacity>
 
@@ -272,7 +269,7 @@ const CreateAccountScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={styles.linkText}>
-              Already have an account? <Text style={styles.linkTextBold}>Sign In</Text>
+              {t('createAccount.alreadyHaveAccount')}<Text style={styles.linkTextBold}>{t('createAccount.signIn')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -335,7 +332,6 @@ const styles = StyleSheet.create({
   phoneContainer: {
     flexDirection: 'row',
     gap: 8,
-   
   },
   picker: {
     width: 130,
@@ -346,7 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1f2937',
   },
-  
   phoneInput: {
     flex: 1,
     backgroundColor: '#ffffff',

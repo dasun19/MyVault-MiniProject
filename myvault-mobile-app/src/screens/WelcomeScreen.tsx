@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {RootStackParamList} from '../../App';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next'; 
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -12,6 +13,7 @@ type Props = {
 }
 
 const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
+    const { t } = useTranslation(); 
 
     // Function to navigate to SigninScreen
     const handleSignin = async () => {
@@ -41,11 +43,10 @@ const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
     // Function to navigate to CreateAccountScreen
     const handleCreateAccount = () => {
         console.log('Navigating to CreateAccountScreen');
-        navigation.navigate('CreateAccount'); // CreateAccount screen defined in your navigator
+        navigation.navigate('CreateAccount');
     };
 
     return (
-
         <SafeAreaView style = {styles.container}>
             <View style = {styles.content}>
 
@@ -58,29 +59,24 @@ const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
                 </View>
 
                 {/* welcome text */}
-                <Text style = {styles.welcomeTitle}>MyVault</Text>
-                <Text style = {styles.subtitle}>Digital identity and document verification solution</Text>
+                <Text style = {styles.welcomeTitle}>{t('welcome.appName')}</Text>
+                <Text style = {styles.subtitle}>{t('welcome.subtitle')}</Text>
 
                 {/* Sign in button */}
                 <TouchableOpacity style = {styles.signinButton}
                     onPress = {handleSignin}>
-                        <Text style = {styles.signinText}>Sign in</Text>
+                        <Text style = {styles.signinText}>{t('welcome.signIn')}</Text>
                 </TouchableOpacity>
 
                 {/*Create MyVault Account button */}
                 <TouchableOpacity style = {styles.signinButton}
                     onPress = {handleCreateAccount}>
-                        <Text style = {styles.signinText}>Create MyVault Account</Text>
+                        <Text style = {styles.signinText}>{t('welcome.createAccount')}</Text>
                 </TouchableOpacity>
 
-
             </View>
-
-
         </SafeAreaView>
-
     );
-
 };
 
 const styles = StyleSheet.create({
@@ -131,8 +127,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         textAlign: 'center',
     },
-
-
 });
 
 export default WelcomeScreen;

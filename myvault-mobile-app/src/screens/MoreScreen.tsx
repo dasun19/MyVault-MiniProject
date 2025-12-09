@@ -11,17 +11,21 @@ import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../App.tsx';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
 
 type MoreScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 const MoreScreen = () => {
+  const { t } = useTranslation(); // ✅ ADD THIS
   const navigation = useNavigation<MoreScreenNavigationProp>();
 
   // Menu options
   const options = [
-    { id: '1', title: 'Profile', screen: 'Profile' },
-    { id: '2', title: 'Settings', screen: 'Settings' },
-    { id: '3', title: 'Help & Support', screen: 'Help' },
-    { id: '4', title: 'About', screen: 'About' },
+    { id: '1', title: t('more.profile'), screen: 'Profile' },
+    { id: '2', title: t('more.settings'), screen: 'Settings' },
+    { id: '3', title: t('more.helpSupport'), screen: 'Help' },
+    { id: '4', title: t('more.about'), screen: 'About' },
   ];
 
   const renderItem = ({ item }: any) => (
@@ -35,13 +39,11 @@ const MoreScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.pageContainer} >
-      <ScrollView showsVerticalScrollIndicator={false} >
-    <AppHeader/>
-    <View style={styles.container}>
-      
-
-      {options.map((item, index) => (
+    <SafeAreaView style={styles.pageContainer}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <AppHeader />
+        <View style={styles.container}>
+          {options.map((item, index) => (
             <React.Fragment key={item.id}>
               <TouchableOpacity
                 style={styles.optionContainer}
@@ -55,8 +57,8 @@ const MoreScreen = () => {
               {index < options.length - 1 && <View style={styles.separator} />}
             </React.Fragment>
           ))}
-    </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -64,10 +66,9 @@ const MoreScreen = () => {
 export default MoreScreen;
 
 const styles = StyleSheet.create({
-  pageContainer:{
-    flex:1,
-    backgroundColor:'#f8fafc',
-   
+  pageContainer: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
   },
   container: {
     flex: 1,

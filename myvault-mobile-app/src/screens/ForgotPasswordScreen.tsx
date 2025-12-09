@@ -6,16 +6,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
+import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
 
 type Props = NativeStackScreenProps<RootStackParamList, "ForgotPassword">;
 
 const ForgotPassword: React.FC<Props> = ({ navigation }) => {
+  const { t } = useTranslation(); // ✅ ADD THIS
+  
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Email is required.");
+      Alert.alert(t('forgotPassword.errorTitle'), t('forgotPassword.emailRequired'));
       return;
     }
 
@@ -32,18 +35,18 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
       try {
         data = await res.json();
       } catch {
-        Alert.alert("Error", "Invalid server response.");
+        Alert.alert(t('forgotPassword.errorTitle'), t('forgotPassword.invalidResponse'));
         setLoading(false);
         return;
       }
 
       if (res.ok && data.success) {
         Alert.alert(
-          "Success",
-          "Verification code sent to your email!",
+          t('forgotPassword.successTitle'),
+          t('forgotPassword.successMessage'),
           [
             {
-              text: "OK",
+              text: t('common.ok'),
               onPress: () => {
                 // Navigate to ResetPasswordConfirmation with email
                 navigation.navigate("ResetPasswordConfirmation", { email });
@@ -52,12 +55,12 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
           ]
         );
       } else {
-        Alert.alert("Error", data.message || "Unable to send verification code.");
+        Alert.alert(t('forgotPassword.errorTitle'), data.message || t('forgotPassword.unableToSend'));
       }
 
     } catch (err) {
       console.error("Forgot password error:", err);
-      Alert.alert("Error", "Network error. Check your server or connection.");
+      Alert.alert(t('forgotPassword.errorTitle'), t('forgotPassword.networkError'));
     } finally {
       setLoading(false);
     }
@@ -65,28 +68,28 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.mainContainer}>
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
+      <View style={styles.container}>
+        <Text style={styles.title}>{t('forgotPassword.title')}</Text>
 
-      <TextInput
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+        <TextInput
+          placeholder={t('forgotPassword.emailPlaceholder')}
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-      <TouchableOpacity
-        style={[styles.button, loading && { opacity: 0.5 }]}
-        onPress={handleSend}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Sending..." : "Send Verification Code"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.5 }]}
+          onPress={handleSend}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? t('forgotPassword.sending') : t('forgotPassword.sendButton')}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -94,9 +97,21 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
 export default ForgotPassword;
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, padding: 20, backgroundColor: "#fff",  },
-  container: {  padding: 20, backgroundColor: "#ffff", marginTop: 100 },
-  title: { fontSize: 28, fontWeight: "700", marginBottom: 20 },
+  mainContainer: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: "#fff" 
+  },
+  container: { 
+    padding: 20, 
+    backgroundColor: "#ffff", 
+    marginTop: 100 
+  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: "700", 
+    marginBottom: 20 
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",

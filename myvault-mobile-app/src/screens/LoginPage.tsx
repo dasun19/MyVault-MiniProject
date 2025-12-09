@@ -14,7 +14,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBiometrics from 'react-native-biometrics';
 import CryptoJS from 'crypto-js';
-import {  Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
+import { Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
 
 type LoginMode = 'idNumber' | 'pin' | 'biometric';
 type FlowStep = 'login' | 'security-setup';
@@ -29,7 +30,7 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch('http://10.190.80.233:3000/api/auth/validate-token', {
+    const response = await fetch('http://10.57.232.233:3000/api/auth/validate-token', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -44,15 +45,17 @@ const validateToken = async (token: string | null): Promise<boolean> => {
       return false;
     } else {
       console.error('Server error during token validation:', response.status);
-      return true; // Don't invalidate token for server errors
+      return true;
     }
   } catch (error) {
     console.error('Network error during token validation:', error);
-    return true; // Don't invalidate token for network errors
+    return true;
   }
 };
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation(); // ✅ ADD THIS
+  
   // State for flow control
   const [flowStep, setFlowStep] = useState<FlowStep>('login');
   const [isFirstTimeLogin, setIsFirstTimeLogin] = useState<boolean>(false);
@@ -104,9 +107,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       console.log('🔄 Starting app initialization...');
       
-      // Clear everything for debugging - remove this line once it's working
-      // await AsyncStorage.clear();
-      
       const securitySetupComplete = await AsyncStorage.getItem('securitySetupComplete');
       const userData = await AsyncStorage.getItem('userData');
       const storedPin = await AsyncStorage.getItem('userPin');
@@ -121,10 +121,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         biometricPref,
       });
 
-      // Always check biometric support first
       await checkBiometricSupport();
 
-      // If no security setup completed, this is first time
       if (securitySetupComplete !== 'true') {
         console.log('✨ First time login detected');
         setIsFirstTimeLogin(true);
@@ -132,11 +130,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         return;
       }
 
-      // Security setup is complete, determine available methods
       console.log('🔐 Security setup complete, checking available methods...');
       setIsFirstTimeLogin(false);
 
-      // Check what security methods are available
       const hasPinSetup = !!storedPin;
       const hasBiometricSetup = biometricPref === 'true' && biometricSupported;
 
@@ -186,7 +182,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     if (field === 'idNumber') setIdNumber(value);
     if (field === 'password') setPassword(value);
 
-    // Clear errors
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -197,15 +192,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     if (loginMode === 'idNumber' || isFirstTimeLogin) {
       if (!idNumber.trim()) {
-        newErrors.idNumber = 'National ID number is required';
+        newErrors.idNumber = t('login.errors.idNumberRequired');
       } else if (!/^\d{9}[vVxX]$|^\d{12}$/.test(idNumber)) {
-        newErrors.idNumber = 'Please enter a valid Sri Lankan National ID number';
+        newErrors.idNumber = t('login.errors.idNumberInvalid');
       }
 
       if (!password.trim()) {
-        newErrors.password = 'Password is required';
+        newErrors.password = t('login.errors.passwordRequired');
       } else if (password.length < 8) {
-        newErrors.password = 'Password must be at least 8 characters';
+        newErrors.password = t('login.errors.passwordTooShort');
       }
     }
 
@@ -226,13 +221,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       return;
     }
 
-    // ID/password login
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      const endpoint = 'http://10.190.80.233:3000/api/auth/login';
+      const endpoint = 'http://10.57.232.233:3000/api/auth/login';
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);
@@ -247,11 +241,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          setErrors({ submit: 'Invalid ID number or password' });
+          setErrors({ submit: t('login.errors.invalidCredentials') });
         } else if (response.status === 429) {
-          setErrors({ submit: 'Too many attempts. Please try again later.' });
+          setErrors({ submit: t('login.errors.tooManyAttempts') });
         } else {
-          setErrors({ submit: 'Server error. Please try again.' });
+          setErrors({ submit: t('login.errors.serverError') });
         }
         return;
       }
@@ -272,11 +266,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           navigation.replace('BottomTabs');
         }
       } else {
-        setErrors({ submit: data?.message || 'Login failed' });
+        setErrors({ submit: data?.message || t('login.errors.serverError') });
       }
     } catch (error) {
       console.error('❌ Login error:', error);
-      setErrors({ submit: 'Network error. Please check your connection and try again.' });
+      setErrors({ submit: t('login.errors.networkError') });
     } finally {
       setIsLoading(false);
     }
@@ -290,15 +284,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (!available) {
         Alert.alert(
-          'Biometric Authentication',
-          'Biometric authentication is not available on this device.',
-          [{ text: 'OK', onPress: () => setLoginMode('pin') }]
-        );
+          t('login.biometricAuth'),
+          t('login.biometricNotAvailable'),
+          [{ text: t('common.ok'), onPress: () => setLoginMode('pin') }]);
         return;
       }
 
       const { success } = await rnBiometrics.simplePrompt({
-        promptMessage: 'Confirm your identity to access MyVault',
+        promptMessage: t('login.biometricPrompt'),
       });
 
       if (success) {
@@ -306,45 +299,44 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         navigation.replace('BottomTabs');
       } else {
         console.log('❌ Biometric authentication failed');
-        Alert.alert('Authentication Failed', 'Biometric authentication was cancelled or failed.');
+        Alert.alert(t('login.authFailed'), t('login.biometricCancelled'));
       }
     } catch (error) {
       console.error('❌ Biometric error:', error);
-      Alert.alert('Biometric Error', 'Biometric authentication failed');
+      Alert.alert(t('login.biometricError'), t('login.biometricFailed'));
     }
   };
 
   const handlePinLogin = async (): Promise<void> => {
     console.log('🔢 Attempting PIN login');
     if (!pin || pin.length !== 6) {
-      setErrors({ pin: 'Please enter your 6-digit PIN' });
+      setErrors({ pin: t('login.errors.pinRequired') });
       return;
     }
 
     try {
       const storedPin = await AsyncStorage.getItem('userPin');
       if (!storedPin) {
-        setErrors({ pin: 'PIN not found. Please login with email.' });
+        setErrors({ pin: t('login.errors.pinNotFound') });
         return;
       }
 
       const isValidPin = await verifyPin(pin, storedPin);
       if (!isValidPin) {
-        setErrors({ pin: 'Invalid PIN' });
+        setErrors({ pin: t('login.errors.pinInvalid') });
         return;
       }
 
       console.log('✅ PIN authentication successful');
       navigation.replace('BottomTabs');
     } catch (error) {
-      setErrors({ pin: 'PIN authentication failed' });
+      setErrors({ pin: t('login.errors.pinAuthFailed') });
       console.error('❌ PIN login error:', error);
     }
   };
 
   const handleLogout = async (): Promise<void> => {
     try {
-      // Clear ONLY auth-related data, preserve documents stored locally
       await AsyncStorage.multiRemove([
         'authToken',
         'userData',
@@ -355,7 +347,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         'registrationEmail'
       ]);
       
-      // Reset all local state
       setUser(null);
       setFlowStep('login');
       setLoginMode('idNumber');
@@ -368,22 +359,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       
       console.log('✅ Logout complete - auth data cleared, documents preserved');
       
-      // Navigate back to Welcome screen with replace to clear navigation stack
       navigation.replace('Welcome');
     } catch (error) {
       console.error('❌ Logout error:', error);
-      Alert.alert('Error', 'Failed to log out. Please try again.');
+      Alert.alert(t('createAccount.errorTitle'), 'Failed to log out. Please try again.');
     }
   };
 
   const handlePinCreation = async (): Promise<boolean> => {
     if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-      setErrors({ pin: 'PIN must be exactly 6 digits' });
+      setErrors({ pin: t('login.errors.pinMustBe6Digits') });
       return false;
     }
 
     if (pin !== confirmPin) {
-      setErrors({ confirmPin: 'PINs do not match' });
+      setErrors({ confirmPin: t('login.errors.pinsDoNotMatch') });
       return false;
     }
 
@@ -397,19 +387,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       const rnBiometrics = new ReactNativeBiometrics();
       const { success } = await rnBiometrics.simplePrompt({
-        promptMessage: 'Set up biometric authentication for MyVault',
+        promptMessage: t('login.biometricPrompt'),
       });
 
       if (success) {
         console.log('✅ Biometric setup successful');
         return true;
       } else {
-        Alert.alert('Setup Failed', 'Biometric authentication setup was cancelled or failed.');
+        Alert.alert(t('login.authFailed'), t('login.biometricCancelled'));
         return false;
       }
     } catch (error) {
       console.error('❌ Biometric setup failed:', error);
-      Alert.alert('Setup Failed', 'Failed to setup biometric authentication.');
+      Alert.alert(t('login.authFailed'), t('login.biometricFailed'));
       return false;
     }
   };
@@ -419,15 +409,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      // Validate that at least one option is enabled
       const anyOptionSelected = securityOptions.enablePinLogin || securityOptions.enableBiometric;
       if (!anyOptionSelected) {
-        setErrors({ submit: 'Please select at least one security method' });
+        setErrors({ submit: t('login.errors.selectSecurityMethod') });
         setIsLoading(false);
         return;
       }
 
-      // Create PIN if enabled
       if (securityOptions.enablePinLogin) {
         const pinCreated = await handlePinCreation();
         if (!pinCreated) {
@@ -445,20 +433,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
       }
 
-      // Store all settings
       await AsyncStorage.setItem('pinLoginEnabled', securityOptions.enablePinLogin.toString());
       await AsyncStorage.setItem('biometricEnabled', (securityOptions.enableBiometric && biometricSuccess).toString());
       await AsyncStorage.setItem('securitySetupComplete', 'true');
 
       console.log('✅ Security setup complete');
       
-      // Show success alert and navigate directly to home
       Alert.alert(
-        'Login Successful!',
-        'Welcome to MyVault. Your account is now secure.',
+        t('login.loginSuccessTitle'),
+        t('login.loginSuccessMessage'),
         [
           {
-            text: 'Get Started',
+            text: t('login.getStarted'),
             onPress: () => {
               navigation.replace('BottomTabs');
             },
@@ -467,7 +453,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       );
     } catch (error) {
       console.error('❌ Security setup error:', error);
-      setErrors({ submit: 'Error during security setup. Please try again.' });
+      setErrors({ submit: t('login.errors.setupError') });
     } finally {
       setIsLoading(false);
     }
@@ -485,180 +471,163 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   const getBiometricTypeText = (): string => {
-    return biometricTypes.includes('FaceID') ? 'Face ID' : 'Fingerprint';
+    return biometricTypes.includes('FaceID') ? t('login.faceId') : t('login.fingerprint');
   };
 
-  // Debug function - add this button temporarily
-  // const clearStorage = async () => {
-  //   await AsyncStorage.clear();
-  //   Alert.alert('Storage Cleared', 'All data cleared. Restart the app.');
-  // };
-
   const renderLoginStep = (): JSX.Element => (
-  <KeyboardAvoidingView
-    style={styles.container}
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  >
-    <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {isFirstTimeLogin ? 'Welcome to MyVault' : 'Welcome Back'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {isFirstTimeLogin
-            ? 'Sign in to complete your account setup'
-            : 'Sign in to access your secure vault'}
-        </Text>
-      </View>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            {isFirstTimeLogin ? t('login.welcomeNew') : t('login.welcomeBack')}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isFirstTimeLogin
+              ? t('login.subtitleNew')
+              : t('login.subtitleReturning')}
+          </Text>
+        </View>
 
-      {/* DEBUG BUTTON - Remove this once it's working
-      <TouchableOpacity
-        style={[styles.submitButton, { backgroundColor: '#ef4444', marginHorizontal: 24 }]}
-        onPress={clearStorage}
-      >
-        <Text style={styles.submitButtonText}>Clear Storage (Debug)</Text>
-      </TouchableOpacity> */}
+        {/* Mode Switcher - Only for returning users */}
+        {!isFirstTimeLogin && (
+          <View style={styles.methodSwitcher}>
+            <TouchableOpacity
+              style={[styles.modeButton, loginMode === 'pin' && styles.activeModeButton]}
+              onPress={() => handleModeChange('pin')}
+            >
+              <Text style={[styles.modeText, loginMode === 'pin' && styles.activeModeText]}>
+                {t('login.pin')}
+              </Text>
+            </TouchableOpacity>
 
-      {/* Mode Switcher - Only for returning users */}
-      {!isFirstTimeLogin && (
-        <View style={styles.methodSwitcher}>
+            {biometricSupported && (
+              <TouchableOpacity
+                style={[styles.modeButton, loginMode === 'biometric' && styles.activeModeButton]}
+                onPress={() => handleModeChange('biometric')}
+              >
+                <Text style={[styles.modeText, loginMode === 'biometric' && styles.activeModeText]}>
+                  {t('login.biometric')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <View style={styles.form}>
+          {/* ID Number Input */}
+          {(isFirstTimeLogin || loginMode === 'idNumber') && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('login.idNumber')}</Text>
+              <TextInput
+                style={[styles.input, errors.idNumber && styles.inputError]}
+                placeholder={t('login.idNumberPlaceholder')}
+                value={idNumber}
+                onChangeText={(text) => handleChange('idNumber', text)}
+                autoCapitalize="characters"
+                editable={!isLoading}
+              />
+              {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
+            </View>
+          )}
+
+          {/* PIN Input */}
+          {loginMode === 'pin' && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('login.enterPin')}</Text>
+              <TextInput
+                style={[styles.input, errors.pin && styles.inputError]}
+                placeholder={t('login.pinPlaceholder')}
+                value={pin}
+                onChangeText={setPin}
+                keyboardType="numeric"
+                maxLength={6}
+                secureTextEntry
+                editable={!isLoading}
+              />
+              {errors.pin && <Text style={styles.errorText}>{errors.pin}</Text>}
+            </View>
+          )}
+
+          {/* Password Input */}
+          {(isFirstTimeLogin || loginMode === 'idNumber') && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('login.password')}</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, errors.password && styles.inputError]}
+                  placeholder={t('login.passwordPlaceholder')}
+                  value={password}
+                  onChangeText={(text) => handleChange('password', text)}
+                  secureTextEntry={!showPassword}
+                  maxLength={20}
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+                </TouchableOpacity>
+              </View>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+            </View>
+          )}
+
+          {/* Biometric Display */}
+          {loginMode === 'biometric' && (
+            <View style={styles.biometricContainer}>
+              <View style={styles.biometricIcon}>
+                <Text style={styles.biometricIconText}>🔐</Text>
+              </View>
+              <Text style={styles.biometricTitle}>{t('login.biometricAuth')}</Text>
+              <Text style={styles.biometricSubtitle}>
+                {t('login.biometricLoginDescription', { type: getBiometricTypeText().toLowerCase() })}
+              </Text>
+            </View>
+          )}
+
+          {/* Submit Button */}
+          {errors.submit && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{errors.submit}</Text>
+            </View>
+          )}
+
           <TouchableOpacity
-            style={[styles.modeButton, loginMode === 'pin' && styles.activeModeButton]}
-            onPress={() => handleModeChange('pin')}
+            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
           >
-            <Text style={[styles.modeText, loginMode === 'pin' && styles.activeModeText]}>
-              PIN
+            <Text style={styles.submitButtonText}>
+              {isLoading ? t('login.signingIn') : 
+               loginMode === 'biometric' ? t('login.authenticate') : 
+               loginMode === 'pin' ? t('login.signInWithPin') : t('login.signIn')}
             </Text>
           </TouchableOpacity>
 
-          {biometricSupported && (
-            <TouchableOpacity
-              style={[styles.modeButton, loginMode === 'biometric' && styles.activeModeButton]}
-              onPress={() => handleModeChange('biometric')}
-            >
-              <Text style={[styles.modeText, loginMode === 'biometric' && styles.activeModeText]}>
-                Biometric
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      <View style={styles.form}>
-        {/* ID Number Input */}
-        {(isFirstTimeLogin || loginMode === 'idNumber') && (
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>National ID Number</Text>
-            <TextInput
-              style={[styles.input, errors.idNumber && styles.inputError]}
-              placeholder="Enter your National ID number"
-              value={idNumber}
-              onChangeText={(text) => handleChange('idNumber', text)}
-              autoCapitalize="characters"
-              editable={!isLoading}
-            />
-            {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
-          </View>
-          
-        )}
-
-        {/* PIN Input */}
-        {loginMode === 'pin' && (
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Enter Your 6-Digit PIN</Text>
-            <TextInput
-              style={[styles.input, errors.pin && styles.inputError]}
-              placeholder="Enter your PIN"
-              value={pin}
-              onChangeText={setPin}
-              keyboardType="numeric"
-              maxLength={6}
-              secureTextEntry
-              editable={!isLoading}
-            />
-            {errors.pin && <Text style={styles.errorText}>{errors.pin}</Text>}
-          </View>
-        )}
-
-        {/* Password Input */}
-        {(isFirstTimeLogin || loginMode === 'idNumber') && (
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.passwordInput, errors.password && styles.inputError]}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={(text) => handleChange('password', text)}
-                secureTextEntry={!showPassword}
-                maxLength={20}
-                editable={!isLoading}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
-              >
-                <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
-              </TouchableOpacity>
-
-              
-
-            </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-          </View>
-        )}
-
-        {/* Biometric Display */}
-        {loginMode === 'biometric' && (
-          <View style={styles.biometricContainer}>
-            <View style={styles.biometricIcon}>
-              <Text style={styles.biometricIconText}>🔐</Text>
-            </View>
-            <Text style={styles.biometricTitle}>Biometric Authentication</Text>
-            <Text style={styles.biometricSubtitle}>
-              Use your {getBiometricTypeText().toLowerCase()} to securely access your account
+          {/* Create Account Link */}
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => navigation.navigate('CreateAccount')}
+          >
+            <Text style={styles.linkText}>
+              {t('login.dontHaveAccount')}<Text style={styles.linkTextBold}>{t('login.signUp')}</Text>
             </Text>
-          </View>
-        )}
-
-        {/* Submit Button */}
-        {errors.submit && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{errors.submit}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          <Text style={styles.submitButtonText}>
-            {isLoading ? 'Signing In...' : 
-             loginMode === 'biometric' ? 'Authenticate' : 
-             loginMode === 'pin' ? 'Sign In with PIN' : 'Sign In'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Create Account Link */}
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.navigate('CreateAccount')}
-        >
-          <Text style={styles.linkText}>
-            Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style = {styles.linkButton} onPress={() => navigation.navigate("ForgotPassword")}>
-          <Text style={styles.forgetPasswordText}>
-            <Text style={styles.forgotText}>Forgot Password?</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  </KeyboardAvoidingView>
-);
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate("ForgotPassword")}>
+            <Text style={styles.forgetPasswordText}>
+              <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 
   const renderSecuritySetup = (): JSX.Element => (
     <ScrollView style={styles.container}>
@@ -666,9 +635,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <View style={styles.iconContainer}>
           <Lock size={40} color='#2563eb' />
         </View>
-        <Text style={styles.title}>Secure Your Account</Text>
+        <Text style={styles.title}>{t('login.secureAccount')}</Text>
         <Text style={styles.subtitle}>
-          Choose your preferred security methods for future logins
+          {t('login.secureAccountSubtitle')}
         </Text>
       </View>
 
@@ -676,11 +645,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <View style={styles.optionCard}>
           <View style={styles.optionHeader}>
             <View style={styles.optionIcon}>
-             <SquareAsterisk size={30} color='#2563eb' />
-              <View >
-                <Text style={styles.optionTitle}>PIN Login</Text>
-                <Text style={styles.optionDescription}>Quick access with your 6-digit PIN</Text>
-               </View>
+              <SquareAsterisk size={30} color='#2563eb' />
+              <View>
+                <Text style={styles.optionTitle}>{t('login.pinLogin')}</Text>
+                <Text style={styles.optionDescription}>{t('login.pinLoginDescription')}</Text>
+              </View>
             </View>
             <Switch
               value={securityOptions.enablePinLogin}
@@ -695,12 +664,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
           {securityOptions.enablePinLogin && (
             <View style={styles.pinSetupContainer}>
-              <Text style={styles.sectionTitle}>Create Your 6-Digit PIN</Text>
+              <Text style={styles.sectionTitle}>{t('login.createPin')}</Text>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Enter PIN</Text>
+                <Text style={styles.label}>{t('login.enterPinLabel')}</Text>
                 <TextInput
                   style={[styles.input, errors.pin && styles.inputError]}
-                  placeholder="Enter 6-digit PIN"
+                  placeholder={t('login.enterPinPlaceholder')}
                   value={pin}
                   onChangeText={setPin}
                   keyboardType="numeric"
@@ -711,10 +680,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm PIN</Text>
+                <Text style={styles.label}>{t('login.confirmPinLabel')}</Text>
                 <TextInput
                   style={[styles.input, errors.confirmPin && styles.inputError]}
-                  placeholder="Confirm 6-digit PIN"
+                  placeholder={t('login.confirmPinPlaceholder')}
                   value={confirmPin}
                   onChangeText={setConfirmPin}
                   keyboardType="numeric"
@@ -732,11 +701,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <View style={styles.optionIcon}>
               <Fingerprint size={30} color="#2563eb" />
               <View>
-                <Text style={styles.optionTitle}>{getBiometricTypeText()} Login</Text>
+                <Text style={styles.optionTitle}>
+                  {t('login.biometricLogin', { type: getBiometricTypeText() })}
+                </Text>
                 <Text style={styles.optionDescription}>
                   {biometricSupported
-                    ? `Use ${getBiometricTypeText().toLowerCase()} for secure access`
-                    : 'Not available on this device'}
+                    ? t('login.biometricLoginDescription', { type: getBiometricTypeText().toLowerCase() })
+                    : t('login.biometricNotAvailableDevice')}
                 </Text>
               </View>
             </View>
@@ -766,14 +737,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           disabled={isLoading}
         >
           <Text style={styles.primaryButtonText}>
-            {isLoading ? 'Setting Up...' : 'Complete Setup'}
+            {isLoading ? t('login.settingUp') : t('login.completeSetup')}
           </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
-
-
 
   return (
     <>
@@ -794,7 +763,6 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    
   },
   iconContainer: {
     width: 80,
@@ -954,20 +922,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    
   },
   optionInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    
   },
   optionIcon: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,   
-},
- 
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,   
+  },
   optionTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1141,12 +1106,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   forgotText: {
-  color: "#2563eb",
-  marginBottom: 16,
-  textAlign: "right",
-  fontWeight: "600"
-},
-
+    color: "#2563eb",
+    marginBottom: 16,
+    textAlign: "right",
+    fontWeight: "600"
+  },
 });
 
 export default LoginScreen;

@@ -4,7 +4,6 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginPage from './src/screens/LoginPage';
 import CreateAccount from './src/screens/CreateAccount';
 import HomeScreen from './src/screens/HomeScreen';
-import EmailVerificationScreen from './src/screens/EmailVerificationPage';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import BottomTabs from './src/navigation/BottomTabs';
@@ -17,7 +16,9 @@ import ResetPasswordConfirmation from './src/screens/ResetPasswordConfirmationSc
 import ReAuthenticateScreen from './src/screens/ReAuthenticateScreen';
 import { BackHandler, View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import './i18n';
+import HelpSupportScreen from './src/screens/HelpSupportScreen';
+import AboutScreen from './src/screens/AboutScreen';
 
 export type TabParamList = {
   Home: undefined;
@@ -32,7 +33,6 @@ export type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   FirstTimeLogin: undefined;
-  EmailVerification: undefined;
   BottomTabs: NavigatorScreenParams<TabParamList>;
   More: undefined;
   Profile: undefined;
@@ -182,7 +182,7 @@ const App = () =>{
       }}
     >
       <Stack.Navigator 
-        initialRouteName={isAuthenticated ? 'BottomTabs' : 'Welcome'}
+        initialRouteName={isAuthenticated ? 'ReAuthenticate' : 'Welcome'}
         screenOptions={{
           animationEnabled: true,
         }}
@@ -198,10 +198,6 @@ const App = () =>{
 
         <Stack.Screen name = "CreateAccount"
           component={CreateAccount} 
-          options = {{headerShown: false}}/>
-
-          <Stack.Screen name = "EmailVerification"
-          component={EmailVerificationScreen} 
           options = {{headerShown: false}}/>
 
         <Stack.Screen name = "BottomTabs"
@@ -224,6 +220,22 @@ const App = () =>{
         <Stack.Screen 
           name="Settings"
           component={SettingsScreen} 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: true 
+          }}
+        />
+        <Stack.Screen 
+          name="Help"
+          component={HelpSupportScreen} 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: true 
+          }}
+        />
+        <Stack.Screen 
+          name="About"
+          component={AboutScreen} 
           options={{ 
             headerShown: false,
             gestureEnabled: true 

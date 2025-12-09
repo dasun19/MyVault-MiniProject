@@ -15,6 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Guide from './pages/Guide';
 import About from './pages/About';
+import Settings from './pages/Settings';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -425,6 +426,7 @@ function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
         <Route path="/guide" element={<Guide/>}/>
         <Route path="/about" element={<About/>}/>
+        <Route path="/settings" element={<Settings/>}/>
       </Routes>
     </BrowserRouter>
   );

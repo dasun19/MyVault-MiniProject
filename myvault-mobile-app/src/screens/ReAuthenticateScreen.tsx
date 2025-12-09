@@ -13,13 +13,16 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBiometrics from 'react-native-biometrics';
 import CryptoJS from 'crypto-js';
-import {  Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
+import { Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next'; 
 
 interface ReAuthenticateScreenProps {
   navigation: any;
 }
 
 const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation(); 
+  
   const [pin, setPin] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [biometricSupported, setBiometricSupported] = useState<boolean>(false);
@@ -33,13 +36,11 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
 
   const initializeScreen = async () => {
     try {
-      // Check what security methods are available
       const pinLoginEnabled = await AsyncStorage.getItem('pinLoginEnabled');
       const biometricEnabled = await AsyncStorage.getItem('biometricEnabled');
       
       setHasPinSetup(pinLoginEnabled === 'true');
 
-      // Check biometric support
       const rnBiometrics = new ReactNativeBiometrics();
       const { available, biometryType } = await rnBiometrics.isSensorAvailable();
       
@@ -48,7 +49,6 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
         setBiometricTypes([biometryType]);
       }
 
-      // If biometric is available, try it automatically
       if (available && biometricEnabled === 'true') {
         console.log('👆 Attempting automatic biometric authentication');
         setTimeout(() => {
@@ -71,7 +71,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
 
   const handlePinAuth = async () => {
     if (!pin || pin.length !== 6) {
-      setErrors({ pin: 'Please enter your 6-digit PIN' });
+      setErrors({ pin: t('reAuthenticate.errors.pinRequired') });
       return;
     }
 
@@ -80,30 +80,30 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
     try {
       const storedPin = await AsyncStorage.getItem('userPin');
       if (!storedPin) {
-        setErrors({ pin: 'PIN not found. Please log in again.' });
+        setErrors({ pin: t('reAuthenticate.errors.pinNotFound') });
         setIsLoading(false);
         return;
       }
 
       const isValidPin = await verifyPin(pin, storedPin);
       if (!isValidPin) {
-        setErrors({ pin: 'Invalid PIN' });
+        setErrors({ pin: t('reAuthenticate.errors.pinInvalid') });
         setPin('');
         setIsLoading(false);
         return;
       }
 
       console.log('✅ PIN authentication successful');
-      Alert.alert('Success', 'Authentication successful! Welcome back.', [
+      Alert.alert(t('reAuthenticate.successTitle'), t('reAuthenticate.successMessage'), [
         {
-          text: 'OK',
+          text: t('common.ok'),
           onPress: () => {
             navigation.replace('BottomTabs');
           },
         },
       ]);
     } catch (error) {
-      setErrors({ pin: 'PIN authentication failed' });
+      setErrors({ pin: t('reAuthenticate.errors.pinAuthFailed') });
       console.error('❌ PIN auth error:', error);
     } finally {
       setIsLoading(false);
@@ -118,22 +118,22 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
 
       if (!available) {
         Alert.alert(
-          'Biometric Authentication',
-          'Biometric authentication is not available on this device.',
-          [{ text: 'OK', onPress: () => console.log('OK') }]
+          t('reAuthenticate.biometricAuth'),
+          t('reAuthenticate.biometricNotAvailable'),
+          [{ text: t('common.ok'), onPress: () => console.log('OK') }]
         );
         return;
       }
 
       const { success } = await rnBiometrics.simplePrompt({
-        promptMessage: 'Authenticate to access MyVault',
+        promptMessage: t('login.biometricPrompt'),
       });
 
       if (success) {
         console.log('✅ Biometric authentication successful');
-        Alert.alert('Success', 'Authentication successful! Welcome back.', [
+        Alert.alert(t('reAuthenticate.successTitle'), t('reAuthenticate.successMessage'), [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               navigation.replace('BottomTabs');
             },
@@ -148,7 +148,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
   };
 
   const getBiometricTypeText = (): string => {
-    return biometricTypes.includes('FaceID') ? 'Face ID' : 'Fingerprint';
+    return biometricTypes.includes('FaceID') ? t('login.faceId') : t('login.fingerprint');
   };
 
   return (
@@ -159,11 +159,11 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-             <Lock size={40} color='#2563eb' />
+            <Lock size={40} color='#2563eb' />
           </View>
-          <Text style={styles.title}>Authentication Required</Text>
+          <Text style={styles.title}>{t('reAuthenticate.title')}</Text>
           <Text style={styles.subtitle}>
-            Please authenticate to continue using MyVault
+            {t('reAuthenticate.subtitle')}
           </Text>
         </View>
 
@@ -180,10 +180,10 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
                   <Fingerprint size={35} color="#2563eb" />
                   <View style={styles.biometricText}>
                     <Text style={styles.biometricTitle}>
-                      Use {getBiometricTypeText()}
+                      {t('reAuthenticate.useBiometric', { type: getBiometricTypeText() })}
                     </Text>
                     <Text style={styles.biometricSubtitle}>
-                      Quick and secure authentication
+                      {t('reAuthenticate.biometricSubtitle')}
                     </Text>
                   </View>
                 </View>
@@ -192,7 +192,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
               {hasPinSetup && (
                 <View style={styles.divider}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>OR</Text>
+                  <Text style={styles.dividerText}>{t('reAuthenticate.or')}</Text>
                   <View style={styles.dividerLine} />
                 </View>
               )}
@@ -202,10 +202,10 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
           {/* PIN Option */}
           {hasPinSetup && (
             <View style={styles.pinContainer}>
-              <Text style={styles.label}>Enter Your 6-Digit PIN</Text>
+              <Text style={styles.label}>{t('reAuthenticate.enterPin')}</Text>
               <TextInput
                 style={[styles.input, errors.pin && styles.inputError]}
-                placeholder="Enter your PIN"
+                placeholder={t('reAuthenticate.pinPlaceholder')}
                 value={pin}
                 onChangeText={(text) => {
                   setPin(text);
@@ -226,7 +226,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
                 disabled={isLoading}
               >
                 <Text style={styles.submitButtonText}>
-                  {isLoading ? 'Authenticating...' : 'Authenticate with PIN'}
+                  {isLoading ? t('reAuthenticate.authenticating') : t('reAuthenticate.authenticateWithPin')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -236,7 +236,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
           {!hasPinSetup && !biometricSupported && (
             <View style={styles.warningContainer}>
               <Text style={styles.warningText}>
-                No security methods set up. Please log in again.
+                {t('reAuthenticate.noSecurityMethods')}
               </Text>
               <TouchableOpacity
                 style={styles.submitButton}
@@ -244,7 +244,7 @@ const ReAuthenticateScreen: React.FC<ReAuthenticateScreenProps> = ({ navigation 
                   navigation.replace('Login');
                 }}
               >
-                <Text style={styles.submitButtonText}>Log In</Text>
+                <Text style={styles.submitButtonText}>{t('reAuthenticate.logIn')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -322,7 +322,6 @@ const styles = StyleSheet.create({
   biometricIcon: {
     fontSize: 32,
     marginRight: 16,
-    
   },
   biometricText: {
     flex: 1,

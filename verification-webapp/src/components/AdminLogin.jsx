@@ -1,4 +1,4 @@
-// src/components/AdminLogin.jsx
+// src/components/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -41,8 +41,8 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-800 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Admin Login</h1>
-          <p className="text-gray-500 mt-2">Access your admin dashboard</p>
+          <h1 className="text-3xl font-bold text-gray-800">Login</h1>
+          <p className="text-gray-500 mt-2">Access your dashboard</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">

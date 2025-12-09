@@ -12,11 +12,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ManualIDEntryForm from './ManualIDEntryForm';
 import ManualDLEntryForm from './ManualDLEntryForm';
+import ManualALCForm from './ManualALCForm';                    // A/L Form
 import VirtualIDCard from './VirtualIDCard';
 import VirtualDrivingLicence from './VirtualDrivingLicence';
-import IDCardOptionsMenu  from './IDCardOptionsMenu';
-import ShareModal  from './ShareModal';
-import { User,IdCard, Scroll,FileCheck } from 'lucide-react-native';   
+import VirtualALCertificate from './VirtualALCertificate';
+import IDCardOptionsMenu from './IDCardOptionsMenu';
+import ShareModal from './ShareModal';
+import { User, IdCard, Scroll, FileCheck } from 'lucide-react-native';
 
 import { DocumentConfig } from '../config/documentConfigs';
 
@@ -25,16 +27,19 @@ import { DocumentConfig } from '../config/documentConfigs';
 interface BaseDocumentData {
   id: string;
   fullName: string;
-  dateOfBirth: string;
+  dateOfBirth?: string;
   hash: string;
   createdAt: string;
   updatedAt: string;
   isVerified?: boolean;
 }
+
 interface IDCardData extends BaseDocumentData {
   idNumber: string;
   issuedDate: string;
+  dateOfBirth: string;
 }
+
 interface DrivingLicenseData extends BaseDocumentData {
   licenseNumber: string;
   dateOfIssue: string;
@@ -43,7 +48,20 @@ interface DrivingLicenseData extends BaseDocumentData {
   bloodGroup?: string;
   vehicleClasses?: string[];
 }
-type DocumentData = IDCardData | DrivingLicenseData;
+
+interface ALResultData extends BaseDocumentData {
+  year: string;
+  indexNumber: string;
+  stream: string;
+  zScore: string;
+  subjects: { subjectCode: string; result: string }[];
+  generalTest: string;
+  generalEnglish: string;
+  districtRank: string;
+  islandRank: string;
+}
+
+type DocumentData = IDCardData | DrivingLicenseData | ALResultData;
 
 // ---------------------------------------------------------------
 type Props = {
@@ -75,16 +93,15 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
       const userData = await AsyncStorage.getItem('userData');
       if (userData) {
         const user = JSON.parse(userData);
-        // Use user's unique identifier (id or idNumber)
         const userIdentifier = user.id || user.idNumber;
-        console.log('📱 Current user ID:', userIdentifier);
+        console.log('Current user ID:', userIdentifier);
         setUserId(userIdentifier);
       } else {
-        console.warn('⚠️ No user data found');
+        console.warn('No user data found');
         setUserId(null);
       }
     } catch (error) {
-      console.error('❌ Error getting user ID:', error);
+      console.error('Error getting user ID:', error);
       setUserId(null);
     }
   };
@@ -92,34 +109,31 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
   // Generate user-specific storage key
   const getUserStorageKey = (): string => {
     if (!userId) {
-      console.warn('⚠️ No userId available, using default key');
+      console.warn('No userId available, using default key');
       return config.storageKey;
     }
     const userKey = `${userId}_${config.storageKey}`;
-    console.log('🔑 Using storage key:', userKey);
+    console.log('Using storage key:', userKey);
     return userKey;
   };
 
   const loadSavedDocument = async () => {
     try {
-      if (!userId) {
-        console.log('⏳ Waiting for userId to load document');
-        return;
-      }
+      if (!userId) return;
 
       const storageKey = getUserStorageKey();
       const savedData = await AsyncStorage.getItem(storageKey);
       const parsedData: DocumentData | null = savedData ? JSON.parse(savedData) : null;
-      
+
       if (parsedData) {
-        console.log('✅ Document loaded for user:', userId);
+        console.log('Document loaded for user:', userId);
       } else {
-        console.log('📄 No document found for user:', userId);
+        console.log('No document found for user:', userId);
       }
-      
+
       setSavedDocument(parsedData);
     } catch (error) {
-      console.error('❌ Error loading document:', error);
+      console.error('Error loading document:', error);
       Alert.alert('Error', `Failed to load saved ${config.title}.`);
       setSavedDocument(null);
     }
@@ -148,10 +162,10 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
       await AsyncStorage.removeItem(storageKey);
       setSavedDocument(null);
       setShowOptionsMenu(false);
-      console.log('🗑️ Document deleted for user:', userId);
+      console.log('Document deleted for user:', userId);
       Alert.alert('Success', `${config.title} deleted successfully!`);
     } catch (error) {
-      console.error('❌ Delete error:', error);
+      console.error('Delete error:', error);
       Alert.alert('Error', `Failed to delete ${config.title}.`);
     }
   };
@@ -164,7 +178,7 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
   const renderEntryForm = (isEditMode = false) => {
     const commonProps = {
       onClose: handleManualEntryClose,
-      storageKey: getUserStorageKey(), // Use user-specific key
+      storageKey: getUserStorageKey(),
       restrictToSingle: true,
     };
 
@@ -181,6 +195,13 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
           <ManualDLEntryForm
             {...commonProps}
             editingLicense={isEditMode ? (savedDocument as DrivingLicenseData) : null}
+          />
+        );
+      case 'a_l_certificate':
+        return (
+          <ManualALCForm
+            {...commonProps}
+            editingResult={isEditMode ? (savedDocument as ALResultData) : null}
           />
         );
       default:
@@ -203,10 +224,10 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
             showQRCode={false}
           />
         );
-         case 'a_l_certificate':
+      case 'a_l_certificate':
         return (
-          <VirtualDrivingLicence
-            licenseData={savedDocument as DrivingLicenseData}
+          <VirtualALCertificate
+            resultData={savedDocument as ALResultData}
             showQRCode={false}
           />
         );
@@ -238,29 +259,34 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
 
   const renderCollapsedCard = () => {
     const IconComponent = config.icon;
-  
-  return ( 
-    <TouchableOpacity
-      style={styles.collapsedCard}
-      onPress={() => setIsCardExpanded(true)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.collapsedCardContent}>
-        <View style={styles.collapsedCardIcon}>
+
+    return (
+      <TouchableOpacity
+        style={styles.collapsedCard}
+        onPress={() => setIsCardExpanded(true)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.collapsedCardContent}>
+          <View style={styles.collapsedCardIcon}>
             <IconComponent size={35} color="#2563eb" />
-        </View>
-        <View style={styles.collapsedCardInfo}>
-          <Text style={styles.collapsedCardTitle}>{config.title}</Text>
-          <Text style={styles.collapsedCardSubtitle}>
-            {config.type === 'id_card'
+          </View>
+          <View style={styles.collapsedCardInfo}>
+            <Text style={styles.collapsedCardTitle}>{config.title}</Text>
+            <Text style={styles.collapsedCardSubtitle}>
+              {config.type === 'id_card'
                 ? (savedDocument as IDCardData)?.idNumber || 'Tap to view details'
-                : (savedDocument as DrivingLicenseData)?.licenseNumber || 'Tap to view details'}
-          </Text>
+                : config.type === 'driving_license'
+                ? (savedDocument as DrivingLicenseData)?.licenseNumber || 'Tap to view details'
+                : config.type === 'a_l_certificate'
+                ? `${(savedDocument as ALResultData)?.year || ''} • Index ${(savedDocument as ALResultData)?.indexNumber || ''}` || 'Tap to view details'
+                : 'Tap to view details'}
+            </Text>
+          </View>
+          <Text style={styles.expandIcon}>›</Text>
         </View>
-        <Text style={styles.expandIcon}>›</Text>
-      </View>
-    </TouchableOpacity>
-  )};
+      </TouchableOpacity>
+    );
+  };
 
   const renderVirtualSection = () => (
     <View style={styles.virtualIdContainer}>
@@ -295,7 +321,6 @@ const DocumentSection: React.FC<Props> = ({ config }) => {
     </View>
   );
 
-  // Don't render anything until userId is loaded
   if (!userId) {
     return (
       <View style={styles.loadingContainer}>
@@ -414,7 +439,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  cardIconText: { fontSize: 24 },
   virtualIdContainer: { position: 'relative' },
   virtualIdHeader: {
     flexDirection: 'row',
