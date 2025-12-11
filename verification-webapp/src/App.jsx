@@ -11,8 +11,9 @@ import StoreHash from './pages/StoreHash';
 import jsQR from 'jsqr';
 import './App.css';
 import DropdownMenu from './components/DropdownMenu';
-import AdminLogin from './components/AdminLogin';
+import Login from './components/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import AuthorityDashboard from './pages/AuthorityDashboard';
 import Guide from './pages/Guide';
 import About from './pages/About';
 import Settings from './pages/Settings';
@@ -422,8 +423,9 @@ function App() {
         <Route path="/verify" element={<Verify />} />
         <Route path="/admin/dashboard/store" element={<StoreHash />} />
         <Route path="/DropdownMenu" element={<DropdownMenu/>}/>
-        <Route path="/admin/login" element={<AdminLogin/>}/>
+        <Route path="/login" element={<Login/>}/>
         <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
+        <Route path="/authority/dashboard" element={<AuthorityDashboard/>}/>
         <Route path="/guide" element={<Guide/>}/>
         <Route path="/about" element={<About/>}/>
         <Route path="/settings" element={<Settings/>}/>

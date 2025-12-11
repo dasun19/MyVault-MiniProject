@@ -7,15 +7,15 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
+    const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/admin/login");
+      navigate("/login");
     }
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    navigate("/admin/login");
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   const goToStoreHash = () => {
