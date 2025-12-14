@@ -15,7 +15,8 @@ import { User, Mail, Phone, CreditCard, Calendar, LogOut, Trash2, Save } from 'l
 import AppHeader from '../components/AppHeader';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
+import { useTranslation } from 'react-i18next';
+import ipAddress from '../services/IPaddress';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -24,7 +25,7 @@ type Props = {
 };
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { t } = useTranslation(); // ✅ ADD THIS
+  const { t } = useTranslation(); // 
   
   const [user, setUser] = useState<any>(null);
   const [fullName, setFullName] = useState('');
@@ -61,7 +62,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     setUpdating(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch('http://10.143.59.233:3000/api/auth/update', {
+      const res = await fetch(`http://${ipAddress}:3000/api/auth/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem('authToken');
-              await fetch('http://10.143.59.233:3000/api/auth/delete', {
+              await fetch(`http://${ipAddress}:3000/api/auth/delete`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
               });

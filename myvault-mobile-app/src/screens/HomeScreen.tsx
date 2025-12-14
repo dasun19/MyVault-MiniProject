@@ -14,7 +14,7 @@ import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppHeader from '../components/AppHeader';
 import { User, FileText, Shield, ShieldCheck, Lock, Link, Link2, CircleCheck, QrCode, Share2, Send } from 'lucide-react-native';
-import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
+import { useTranslation } from 'react-i18next'; 
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -23,7 +23,7 @@ type Props = {
 }
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-    const { t } = useTranslation(); // ✅ ADD THIS
+    const { t } = useTranslation(); 
     
     const [showJWTVerifier, setShowJWTVerifier] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(1));
@@ -67,7 +67,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.quickActionsSection}>
                     <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
                     
+                     <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            >
                     <View style={styles.actionsGrid}>
+                       
                         {/* Navigate to Documents */}
                         <TouchableOpacity 
                             style={styles.actionCard}
@@ -88,6 +93,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
                         <TouchableOpacity 
                             style={styles.actionCard}
+                            onPress={() => navigation.navigate('ScanVerificationRequest')}
+                        >
+                            <View style={styles.actionIconContainer}>
+                                <QrCode size={35} color="#2563eb" />
+                            </View>
+                            <Text style={styles.actionTitle}>{t('home.scanVerificationRequestTitle')}</Text>
+                            <Text style={styles.actionSubtitle}>
+                                {t('home.scanVerificationRequestSubtitle')}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.actionCard}
                             onPress={() => navigation.navigate('Profile')}
                         >
                             <View style={styles.actionIconContainer}>
@@ -98,7 +116,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                                 {t('home.profileSubtitle')}
                             </Text>
                         </TouchableOpacity>
+
+                        
+                        
                     </View>
+                    </ScrollView>
                 </View>
 
                 {/* Security Information Section */}
@@ -212,6 +234,7 @@ const styles = StyleSheet.create({
     actionsGrid: {
         flexDirection: 'row',
         gap: 12,
+        padding:16
     },
     actionCard: {
         flex: 1,

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ipAddress from '../services/IPaddress';
 import { useTranslation } from 'react-i18next'; 
 
 const CreateAccountScreen = ({ navigation }) => {
@@ -103,7 +104,7 @@ const CreateAccountScreen = ({ navigation }) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://10.143.59.233:3000/api/auth/register', {
+      const response = await fetch(`http://${ipAddress}:3000/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +125,7 @@ const CreateAccountScreen = ({ navigation }) => {
         Alert.alert(
           t('createAccount.registrationSuccessTitle'),
           t('createAccount.registrationSuccessMessage'),
-          [{ text: t('common.ok'), onPress: () => navigation.navigate('EmailVerification') }]
+          [{ text: t('common.ok'), onPress: () => navigation.navigate('Login') }]
         );
       } else {
         Alert.alert(t('createAccount.registrationFailedTitle'), data.message || t('createAccount.registrationFailedTitle'));

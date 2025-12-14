@@ -13,10 +13,14 @@ import './App.css';
 import DropdownMenu from './components/DropdownMenu';
 import Login from './components/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 import AuthorityDashboard from './pages/AuthorityDashboard';
 import Guide from './pages/Guide';
 import About from './pages/About';
 import Settings from './pages/Settings';
+import VerificationSystem from './pages/VerificationRequest';
+import UserManagement from './components/UserManagement';
+import UpdateHash from './pages/UpdateHash';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,6 +44,7 @@ function Navbar() {
             {/* DESKTOP NAV LINKS */}
             <ul className="hidden md:flex space-x-8 ml-20">
               <li><a href="/" className="hover:text-blue-200 transition">Home</a></li>
+              <li><a href="/verification-request" className="hover:text-blue-200 transition">Verification Request</a></li>
               <li><a href="/guide" className="hover:text-blue-200 transition">Guide</a></li>
               <li><a href="/about" className="hover:text-blue-200 transition">About</a></li>
             </ul>
@@ -421,14 +426,17 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/verify" element={<Verify />} />
-        <Route path="/admin/dashboard/store" element={<StoreHash />} />
+        <Route path="/authority/dashboard/store" element={<StoreHash />} />
         <Route path="/DropdownMenu" element={<DropdownMenu/>}/>
         <Route path="/login" element={<Login/>}/>
-        <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
+        <Route path="/admin/dashboard" element={<ErrorBoundary><AdminDashboard/></ErrorBoundary>}/>
         <Route path="/authority/dashboard" element={<AuthorityDashboard/>}/>
         <Route path="/guide" element={<Guide/>}/>
         <Route path="/about" element={<About/>}/>
         <Route path="/settings" element={<Settings/>}/>
+        <Route path="/Verification-Request" element={<VerificationSystem/>}/>
+        <Route path="/admin/user-management" element={<UserManagement/>}/>
+        <Route path="/authority/update-hash" element={<UpdateHash/>}/>
       </Routes>
     </BrowserRouter>
   );

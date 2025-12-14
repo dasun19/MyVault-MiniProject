@@ -15,7 +15,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBiometrics from 'react-native-biometrics';
 import CryptoJS from 'crypto-js';
 import { Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
-import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
+import { useTranslation } from 'react-i18next'; 
+import ipAddress from '../services/IPaddress';
+
+const ip = ipAddress;
 
 type LoginMode = 'idNumber' | 'pin' | 'biometric';
 type FlowStep = 'login' | 'security-setup';
@@ -30,7 +33,7 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch('http://10.57.232.233:3000/api/auth/validate-token', {
+    const response = await fetch(`http://${ip}:3000/api/auth/validate-token`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +229,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = 'http://10.57.232.233:3000/api/auth/login';
+      const endpoint = `http://${ip}:3000/api/auth/login`;
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);

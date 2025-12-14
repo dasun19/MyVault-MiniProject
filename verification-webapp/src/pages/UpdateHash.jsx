@@ -1,18 +1,18 @@
-// src/pages/StoreHash.jsx
+// src/pages/UpdateHash.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { keccak256, toUtf8Bytes } from 'ethers';
 
-export default function StoreHash() {
+export default function UpdateHash() {
   const [idNumber, setIdNumber] = useState('');
-  const [identityId, setIdentityId] = useState(''); 
-  const [hashHex, setHashHex] = useState(''); 
+  const [identityId, setIdentityId] = useState('');
+  const [newHashHex, setNewHashHex] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [error, setError] = useState('')
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Convert ID number to keccak256 hash (0x prefixed)
+  // Convert ID number to keccak256 hash
   const hashIdNumber = (id) => {
     if (!id) return '';
     return keccak256(toUtf8Bytes(id.trim()));
@@ -49,11 +49,11 @@ export default function StoreHash() {
     setLoading(true);
 
     try {
-      if (!identityId || !hashHex.trim()) {
-        throw new Error('ID number and document hash are required');
+      if (!identityId || !newHashHex.trim()) {
+        throw new Error('ID number and new document hash are required');
       }
 
-      let cleanHash = hashHex.trim();
+      let cleanHash = newHashHex.trim();
       if (!cleanHash.startsWith('0x')) cleanHash = '0x' + cleanHash;
 
       const token = localStorage.getItem('token');
@@ -61,24 +61,19 @@ export default function StoreHash() {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch(
-        'http://localhost:3000/api/authority/store-initial',
+        'http://localhost:3000/api/authority/update-hash',
         {
           method: 'POST',
           headers,
-          body: JSON.stringify({ identityId, hashHex: cleanHash }),
+          body: JSON.stringify({ identityId, newHashHex: cleanHash }),
         }
       );
 
       const data = await response.json();
-      
-      console.log("Result from API:", data);
-      
+      console.log('Result from API:', data);
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Unauthorized: you must be an authority to store hashes');
-        }
-        throw new Error(data.error || 'Failed to store');
+        throw new Error(data.message || 'Failed to update hash');
       }
 
       setResult(data);
@@ -89,11 +84,10 @@ export default function StoreHash() {
     }
   };
 
-
   return (
     <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        Store Document Hash on Blockchain
+        Update Document Hash on Blockchain
       </h1>
 
       {!result ? (
@@ -115,7 +109,7 @@ export default function StoreHash() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Identity Hash 
+              Identity Hash
             </label>
             <input
               type="text"
@@ -127,13 +121,13 @@ export default function StoreHash() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Document Hash
+              New Document Hash
             </label>
             <input
               type="text"
-              value={hashHex}
-              onChange={(e) => setHashHex(e.target.value)}
-              placeholder="Enter 0x… document hash"
+              value={newHashHex}
+              onChange={(e) => setNewHashHex(e.target.value)}
+              placeholder="Enter 0x… new document hash"
               className="w-full p-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -146,49 +140,54 @@ export default function StoreHash() {
 
           <button
             type="submit"
-            disabled={loading || !idNumber.trim() || !hashHex.trim()}
+            disabled={loading || !idNumber.trim() || !newHashHex.trim()}
             className={`w-full py-3 rounded-xl font-bold text-white transition-all ${
-              loading || !idNumber.trim() || !hashHex.trim()
+              loading || !idNumber.trim() || !newHashHex.trim()
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 shadow-lg'
             }`}
           >
-            {loading ? 'Storing on Blockchain...' : 'Store Hash'}
+            {loading ? 'Updating on Blockchain...' : 'Update Hash'}
           </button>
         </form>
       ) : (
         <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-xl">
           <h2 className="text-xl font-bold text-green-800 mb-3">
-            Hash Stored Successfully!
+            Hash Updated Successfully!
           </h2>
           <div className="space-y-2 text-sm font-mono text-green-700">
-           <p>
-    <strong>Identity ID:</strong> <span className="break-all">{result.identityId || "N/A"}</span>
-      </p>
-      <p>
-      <strong>Document Hash:</strong> <span className="break-all">{result.hash || "N/A"}</span>
-      </p>
-    <p>
-    <strong>Tx Hash:</strong> <span className="break-all">{result.txHash || "N/A"}</span>
-    </p>
-    <p>
-    <strong>Block:</strong> <span className="break-all">{result.blockNumber ?? "N/A"}</span>
-    </p>
-    
+            <p>
+              <strong>Identity ID:</strong> <span className="break-all">{result.identityId || "N/A"}</span>
+            </p>
+            <p>
+              <strong>New Document Hash:</strong> <span className="break-all">{result.newHash || "N/A"}</span>
+            </p>
+            <p>
+              <strong>Tx Hash:</strong> <span className="break-all">{result.txHash || "N/A"}</span>
+            </p>
+            <p>
+              <strong>Block:</strong> <span className="break-all">{result.blockNumber ?? "N/A"}</span>
+            </p>
+            
+            {result.message && (
+              <p className="text-sm text-yellow-700 mt-2">
+                <strong>Message:</strong> {result.message}
+              </p>
+            )}
           </div>
 
           <div className="mt-6 text-center">
             <button
               onClick={() => {
                 setIdNumber('');
-                setHashHex('');
+                setNewHashHex('');
                 setIdentityId('');
                 setResult(null);
                 setError('');
               }}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow"
             >
-              Store Another Hash
+              Update Another Hash
             </button>
           </div>
         </div>

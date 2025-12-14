@@ -5,11 +5,13 @@ const Web3 = require("web3");
 const connectDB = require("./src/utils/database");
 const authRoutes = require("./src/routes/authRoutes");
 const adminAuth = require("./src/routes/adminAuth");
+const blockchainRoutes = require("./src/routes/blockchainRoutes");
 const authorityAuth = require("./src/routes/authorityAuth");
 const adminDashboard = require("./src/routes/adminDashboard");
 const authorityDashboard = require("./src/routes/authorityDashboard");
 const HashRegistryABI = require("./artifacts/contracts/HashRegistry.sol/HashRegistry.json").abi;
 const { requireAdmin, requireAuthority } = require("./src/middleware/authMiddleware");
+
 
 
 const app = express();
@@ -62,8 +64,6 @@ app.get("/", (req, res) => {
       hash: "POST /hash/sha256",
       store: "POST /store",
       verify: "GET /verify/:hash",
-      adminLogin: "POST /api/admin/login",
-      adminDashboard: "GET /api/admin/dashboard",
     },
   });
 });
@@ -72,15 +72,18 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 // Mount admin routes
-if (adminAuth && typeof adminAuth === 'function') {
-    app.use("/api/admin", adminAuth);
-}
+app.use("/api/admin", adminAuth);
+
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true
+}));
 
 // Authority /login and /logout
 app.use("/api/authority", authorityAuth);
-
-// Authority account create
-app.use("/api/admin", adminAuth);
+//Blockchain routes
+app.use("/api/authority", blockchainRoutes);
+app.use("/api", blockchainRoutes);
 
 // Mount admin dashboard routes
 //app.get("/api/admin/dashboard",requireAdmin,(req,res) => res.json({ message: "Admin Dashboard"}));

@@ -26,10 +26,10 @@ const createAdmin = async () => {
       return;
     }
 
-    const hashed = await bcrypt.hash("Admin123", 10);
+    // ✅ Don't hash here - let the model's pre-save hook handle it
     const admin = new Admin({
       username: "admin",
-      password: hashed,
+      password: "Admin123",  // Plain password - will be hashed by model
     });
 
     await admin.save();

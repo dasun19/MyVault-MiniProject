@@ -1,7 +1,7 @@
 // backend/models/Admin.js
 // For webapp admin
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { adminConnection } = require("../utils/database");
 
 const adminSchema = new mongoose.Schema({
@@ -30,13 +30,15 @@ let AdminModel;
 try {
   const conn = adminConnection();
   if (conn) {
-    AdminModel = conn.models.Admin || conn.model("Admin", adminSchema);
+    // Explicitly use "admins" collection to avoid conflicts
+    AdminModel = conn.models.Admin || conn.model("Admin", adminSchema, "admins");
   } else {
-    AdminModel = mongoose.models.Admin || mongoose.model("Admin", adminSchema);
+    // Use default connection with explicit collection name
+    AdminModel = mongoose.models.Admin || mongoose.model("Admin", adminSchema, "admins");
   }
 } catch (err) {
   // Fallback to default connection in case something goes wrong
-  AdminModel = mongoose.models.Admin || mongoose.model("Admin", adminSchema);
+  AdminModel = mongoose.models.Admin || mongoose.model("Admin", adminSchema, "admins");
 }
 
 module.exports = AdminModel;

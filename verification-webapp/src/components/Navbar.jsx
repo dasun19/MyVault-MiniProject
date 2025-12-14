@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import DropdownMenu from './DropdownMenu';
 
+
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -20,6 +21,7 @@ function Navbar() {
 
             <ul className="hidden md:flex space-x-8 ml-20">
               <li><a href="/" className="hover:text-blue-200 transition">Home</a></li>
+              <li><a href="/verification-request" className="hover:text-blue-200 transition">Verification Request</a></li>
               <li><a href="/guide" className="hover:text-blue-200 transition">Guide</a></li>
               <li><a href="/about" className="hover:text-blue-200 transition">About</a></li>
             </ul>

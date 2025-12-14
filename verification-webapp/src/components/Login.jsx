@@ -5,7 +5,7 @@ import axios from "axios";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("authority");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +30,10 @@ export default function Login() {
       // Save token and role to localStorage
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("role", role);
+
+      if (response.status !== 500 ){
+        console.log("Login with a token..",response.data.token);
+      }
 
       // Redirect to dashboard
       navigate(role === "admin" ? "/admin/dashboard" : "/authority/dashboard");
@@ -71,18 +75,6 @@ export default function Login() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setRole("admin")}
-                  disabled={loading}
-                  className={`py-3 px-4 rounded-lg font-medium transition-all ${
-                    role === "admin"
-                      ? "bg-indigo-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  Admin
-                </button>
-                <button
-                  type="button"
                   onClick={() => setRole("authority")}
                   disabled={loading}
                   className={`py-3 px-4 rounded-lg font-medium transition-all ${
@@ -92,6 +84,18 @@ export default function Login() {
                   } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Authority
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("admin")}
+                  disabled={loading}
+                  className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                    role === "admin"
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  Admin
                 </button>
               </div>
             </div>

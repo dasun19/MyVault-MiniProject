@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const AuthorityModel = require("../models/Authority");
+const AdminModel = require("../models/Admin");
+
 
 router.post("/login", async (req, res) => {
     const { username, password } = req.body;
@@ -12,7 +14,15 @@ router.post("/login", async (req, res) => {
     try {
         const authority = await AuthorityModel.findOne({ username });
 
+        console.log("Authority login attempt:", { username, found: !!authority, role: authority?.role });
+
         if (!authority) return res.status(400).json({ message: "Invalid credentials"});
+
+        // ✅ Security check: Reject if this is an admin account trying to login as authority
+        if (authority.role && authority.role !== "authority") {
+            console.log("Role mismatch: found role is", authority.role);
+            return res.status(403).json({ message: "This account is registered as admin. Please use admin login." });
+        }
 
         const isMatch = await bcrypt.compare(password, authority.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
@@ -27,7 +37,7 @@ router.post("/login", async (req, res) => {
 
     } catch (err) {
         console.error("Authority login error:", err);
-        res.status(500).json({ message: "Server error"});
+        res.status(500).json({ message: "Server error: " + err.message});
     }
 });
 
@@ -51,5 +61,6 @@ router.post("/logout", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 module.exports = router;

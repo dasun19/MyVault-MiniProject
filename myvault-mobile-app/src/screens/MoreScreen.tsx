@@ -12,12 +12,12 @@ import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../App.tsx';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useTranslation } from 'react-i18next'; // ✅ ADD THIS
+import { useTranslation } from 'react-i18next'; 
 
 type MoreScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const MoreScreen = () => {
-  const { t } = useTranslation(); // ✅ ADD THIS
+  const { t } = useTranslation(); 
   const navigation = useNavigation<MoreScreenNavigationProp>();
 
   // Menu options

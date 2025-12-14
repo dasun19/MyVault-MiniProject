@@ -1,7 +1,7 @@
 // /src/models/Authority.js
 
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { authorityConnection } = require("../utils/database");
 
 const authoritySchema = new mongoose.Schema({
@@ -29,10 +29,11 @@ const conn = authorityConnection();
 let AuthorityModel;
 
 if (conn) {
-  AuthorityModel = conn.models.Authority || conn.model("Authority", authoritySchema);
+  // Explicitly use "authorities" collection to avoid conflicts
+  AuthorityModel = conn.models.Authority || conn.model("Authority", authoritySchema, "authorities");
 } else {
-  // Fallback to default mongoose connection
-  AuthorityModel = mongoose.models.Authority || mongoose.model("Authority", authoritySchema);
+  // Fallback to default mongoose connection with explicit collection name
+  AuthorityModel = mongoose.models.Authority || mongoose.model("Authority", authoritySchema, "authorities");
 }
 
 module.exports = AuthorityModel;

@@ -10,17 +10,19 @@ import {
   Alert,
   Platform,
   PermissionsAndroid,
-  Clipboard,
 } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import Share from 'react-native-share';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
-import CryptoJS from 'crypto-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
+import RSA from 'react-native-rsa-native';
+
 
 // ────────────────────────────────
-// Updated Document Interfaces (Added A/L Result)
+// Document Interfaces
 // ────────────────────────────────
 interface BaseDocumentData {
   id: string;
@@ -62,6 +64,14 @@ interface ALResultData extends BaseDocumentData {
 
 type DocumentData = IDCardData | DrivingLicenseData | ALResultData;
 
+interface VerificationRequest {
+  id: string;
+  verifier: string;
+  description: string;
+  publicKey: string;
+  scannedAt: string;
+}
+
 // ────────────────────────────────
 // Props
 // ────────────────────────────────
@@ -72,12 +82,11 @@ type Props = {
 };
 
 // ────────────────────────────────
-// Helper: Get available fields for sharing
+// Helper: Get available fields
 // ────────────────────────────────
 const getAvailableFields = (cardData: DocumentData | null): { key: string; label: string }[] => {
   if (!cardData) return [];
 
-  // A/L Results Certificate
   if ('year' in cardData && 'indexNumber' in cardData && 'zScore' in cardData) {
     return [
       { key: 'fullName', label: 'Full Name' },
@@ -93,7 +102,6 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
     ];
   }
 
-  // ID Card
   if ('idNumber' in cardData && 'issuedDate' in cardData) {
     return [
       { key: 'fullName', label: 'Full Name' },
@@ -103,7 +111,6 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
     ];
   }
 
-  // Driving License
   if ('licenseNumber' in cardData) {
     const fields = [
       { key: 'fullName', label: 'Full Name' },
@@ -131,18 +138,22 @@ const getAvailableFields = (cardData: DocumentData | null): { key: string; label
 };
 
 // ────────────────────────────────
-// Generate random 12-char passkey
+// RSA Encryption Helper (React Native Compatible)
 // ────────────────────────────────
-const generatePasskey = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 12; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+const encryptWithRSA = async (data: string, publicKeyPEM: string): Promise<string> => {
+  try {
+    // The publicKey is now directly in PEM format (not base64 encoded)
+    // react-native-rsa-native expects PEM format
+    const encrypted = await RSA.encrypt(data, publicKeyPEM);
+    
+    return encrypted;
+  } catch (error) {
+    console.error('RSA encryption error:', error);
+    throw error;
   }
-  return result;
 };
 
-const VERIFICATION_URL = 'https://myvault-verify.vercel.app/verify';
+const STORAGE_KEY = 'verification_requests';
 
 // ────────────────────────────────
 // MAIN COMPONENT
@@ -150,9 +161,28 @@ const VERIFICATION_URL = 'https://myvault-verify.vercel.app/verify';
 export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
   const [selectedFields, setSelectedFields] = useState<Record<string, boolean>>({});
   const [encryptData, setEncryptData] = useState(false);
-  const [passkey, setPasskey] = useState<string | null>(null);
+  const [selectedVerifier, setSelectedVerifier] = useState<string>('');
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
   const [qrValue, setQrValue] = useState<string | null>(null);
   const viewShotRef = useRef<ViewShot>(null);
+
+  // Load verification requests
+  React.useEffect(() => {
+    if (visible) {
+      loadVerificationRequests();
+    }
+  }, [visible]);
+
+  const loadVerificationRequests = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setVerificationRequests(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Failed to load requests:', error);
+    }
+  };
 
   // Reset state when modal opens
   React.useEffect(() => {
@@ -160,17 +190,22 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
       const fields = getAvailableFields(cardData);
       const initial: Record<string, boolean> = {};
       fields.forEach((field) => {
-        initial[field.key] = true; // Select all by default for A/L too
+        initial[field.key] = true;
       });
       setSelectedFields(initial);
       setEncryptData(false);
-      setPasskey(null);
+      setSelectedVerifier('');
       setQrValue(null);
     }
   }, [visible, cardData]);
 
-  const handleGenerateQR = () => {
+  const handleGenerateQR = async () => {
     if (!cardData) return;
+
+    if (encryptData && !selectedVerifier) {
+      Alert.alert('Select Verifier', 'Please select a verification request to encrypt the data.');
+      return;
+    }
 
     const data: Record<string, any> = {};
 
@@ -188,38 +223,43 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
       }
     }
 
-    // Always include hash
     if (cardData.hash) {
       data.hash = cardData.hash;
     }
 
     let payload: string;
-    let newPasskey: string | null = null;
 
     if (encryptData) {
-      newPasskey = generatePasskey();
-      const jsonString = JSON.stringify(data);
-      const key = CryptoJS.enc.Utf8.parse(newPasskey.padEnd(16, '0'));
-      const encrypted = CryptoJS.AES.encrypt(jsonString, key, {
-        mode: CryptoJS.mode.ECB,
-        padding: CryptoJS.pad.Pkcs7,
-      }).toString();
+      const verifier = verificationRequests.find((v) => v.id === selectedVerifier);
+      if (!verifier) {
+        Alert.alert('Error', 'Selected verifier not found.');
+        return;
+      }
 
-      payload = btoa(encrypted).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      try {
+        const jsonString = JSON.stringify(data);
+        const encrypted = await encryptWithRSA(jsonString, verifier.publicKey);
+        
+        // Base64 URL-safe encoding
+        payload = encrypted.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      } catch (error) {
+        Alert.alert('Encryption Failed', 'Failed to encrypt data with verifier public key.');
+        console.error('Encryption error:', error);
+        return;
+      }
     } else {
-      payload = btoa(JSON.stringify(data, null, 2)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      // Normal non-encrypted QR code generation (using btoa equivalent)
+      const jsonString = JSON.stringify(data, null, 2);
+      // Convert to base64 using Buffer (React Native compatible)
+      const base64String = btoa(jsonString);
+      payload = base64String
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
     }
 
-    setPasskey(newPasskey);
     const verificationUrl = `https://myvault-verify.vercel.app/verify?data=${encodeURIComponent(payload)}`;
     setQrValue(verificationUrl);
-  };
-
-  const copyPasskey = () => {
-    if (passkey) {
-      Clipboard.setString(passkey);
-      Alert.alert('Copied!', 'Passkey copied to clipboard.');
-    }
   };
 
   const requestStoragePermission = async () => {
@@ -272,13 +312,14 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
 
   const handleClose = () => {
     setQrValue(null);
-    setPasskey(null);
     setEncryptData(false);
+    setSelectedVerifier('');
     setSelectedFields({});
     onClose();
   };
 
   const availableFields = getAvailableFields(cardData);
+  const selectedVerifierData = verificationRequests.find((v) => v.id === selectedVerifier);
 
   return (
     <Modal visible={visible} animationType="fade" transparent={true}>
@@ -307,23 +348,56 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
                 })}
               </ScrollView>
 
-              <Text style={styles.sectionLabel}>Encrypt QR Data?</Text>
+              <Text style={styles.sectionLabel}>Encrypt for Verifier?</Text>
               <View style={styles.encryptRow}>
-                <CheckBox
-                  value={encryptData}
-                  onValueChange={setEncryptData}
-                />
+                <CheckBox value={encryptData} onValueChange={setEncryptData} />
                 <Text style={styles.checkboxLabel}>
-                  Yes, encrypt data (requires passkey to decrypt)
+                  Yes, encrypt data (only selected verifier can decrypt)
                 </Text>
               </View>
 
               {encryptData && (
-                <View style={styles.warningBox}>
-                  <Text style={styles.warningText}>
-                    A passkey will be generated. Only someone with this passkey can decrypt the data.
-                  </Text>
-                </View>
+                <>
+                  {verificationRequests.length === 0 ? (
+                    <View style={styles.warningBox}>
+                      <Text style={styles.warningText}>
+                        No verification requests found. Please scan a verification request QR code first.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={styles.sectionLabel}>Select Verifier:</Text>
+                      <View style={styles.pickerContainer}>
+                        <Picker
+                          selectedValue={selectedVerifier}
+                          onValueChange={(value) => setSelectedVerifier(value)}
+                          style={styles.picker}
+                        >
+                          <Picker.Item label="-- Select Verifier --" value="" />
+                          {verificationRequests.map((request) => (
+                            <Picker.Item
+                              key={request.id}
+                              label={`${request.verifier} - ${new Date(request.scannedAt).toLocaleDateString()}`}
+                              value={request.id}
+                            />
+                          ))}
+                        </Picker>
+                      </View>
+
+                      {selectedVerifierData && (
+                        <View style={styles.verifierInfo}>
+                          <Text style={styles.verifierInfoTitle}>Selected Verifier:</Text>
+                          <Text style={styles.verifierInfoText}>
+                            <Text style={styles.bold}>Verifier:</Text> {selectedVerifierData.verifier}
+                          </Text>
+                          <Text style={styles.verifierInfoText}>
+                            <Text style={styles.bold}>Description:</Text> {selectedVerifierData.description}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </>
               )}
 
               <View style={styles.buttonRow}>
@@ -349,23 +423,18 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
                   <Text style={styles.qrLabel}>
                     {encryptData ? 'Encrypted Document' : 'Document Data'}
                   </Text>
-                  {encryptData && (
-                    <Text style={styles.encryptedLabel}>Locked (Requires Passkey)</Text>
+                  {encryptData && selectedVerifierData && (
+                    <Text style={styles.encryptedLabel}>
+                      Encrypted for: {selectedVerifierData.verifier}
+                    </Text>
                   )}
                 </View>
               </ViewShot>
 
-              {encryptData && passkey && (
-                <View style={styles.passkeyContainer}>
-                  <Text style={styles.passkeyTitle}>Your Decryption Passkey:</Text>
-                  <View style={styles.passkeyBox}>
-                    <Text style={styles.passkeyText}>{passkey}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.copyButton} onPress={copyPasskey}>
-                    <Text style={styles.copyButtonText}>Copy Passkey</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.passkeyNote}>
-                    Share this passkey securely with the recipient.
+              {encryptData && selectedVerifierData && (
+                <View style={styles.encryptedInfoBox}>
+                  <Text style={styles.encryptedInfoText}>
+                    ✓ This document is encrypted with RSA and can only be decrypted by the verifier using their private key.
                   </Text>
                 </View>
               )}
@@ -393,7 +462,7 @@ export const ShareModal: React.FC<Props> = ({ visible, cardData, onClose }) => {
 };
 
 // ────────────────────────────────
-// Styles (unchanged)
+// Styles
 // ────────────────────────────────
 const styles = StyleSheet.create({
   shareModalOverlay: {
@@ -454,6 +523,37 @@ const styles = StyleSheet.create({
     color: '#92400e',
     lineHeight: 18,
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  picker: {
+    height: 50,
+  },
+  verifierInfo: {
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+  },
+  verifierInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: 6,
+  },
+  verifierInfoText: {
+    fontSize: 13,
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  bold: {
+    fontWeight: '600',
+  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -498,55 +598,21 @@ const styles = StyleSheet.create({
   encryptedLabel: {
     marginTop: 4,
     fontSize: 13,
-    color: '#dc2626',
+    color: '#2563eb',
     fontWeight: '500',
   },
-  passkeyContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    alignItems: 'center',
+  encryptedInfoBox: {
+    marginTop: 16,
+    backgroundColor: '#dcfce7',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
   },
-  passkeyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  passkeyBox: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    minWidth: 180,
-    alignItems: 'center',
-  },
-  passkeyText: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 16,
-    letterSpacing: 1,
-    color: '#111827',
-  },
-  copyButton: {
-    marginTop: 10,
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  passkeyNote: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
+  encryptedInfoText: {
+    fontSize: 13,
+    color: '#166534',
+    lineHeight: 18,
   },
   qrShareButtons: {
     flexDirection: 'row',
@@ -580,7 +646,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     minWidth: 140,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   buttonText: {
     color: '#fff',

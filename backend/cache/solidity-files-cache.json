@@ -37,9 +37,9 @@
         "HashRegistry"
       ]
     },
-    "D:\\Projects\\MyVault-MiniProject\\myvault-backend\\contracts\\HashRegistry.sol": {
-      "lastModificationDate": 1757098318833,
-      "contentHash": "2b721940da51d5ca4ab59ec8018bb020",
+    "D:\\Projects\\MyVault-MiniProject\\backend\\contracts\\HashRegistry.sol": {
+      "lastModificationDate": 1765696106743,
+      "contentHash": "7a8fd593176f18d67e211d9f4f18be30",
       "sourceName": "contracts/HashRegistry.sol",
       "solcConfig": {
         "version": "0.8.20",

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
 import { useTranslation } from 'react-i18next'; 
+import ipAddress from '../services/IPaddress';
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPasswordConfirmation">;
 
@@ -43,7 +44,7 @@ const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://10.190.80.233:3000/api/auth/reset-password", {
+      const res = await fetch(`http://${ipAddress}:3000/api/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,7 +1,18 @@
 // src/pages/Verify.jsx
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import CryptoJS from 'crypto-js';
+import forge from 'node-forge';
+import { keccak256, toUtf8Bytes } from 'ethers';
+import { useRef } from 'react';
+
+
+
+let idNumber;
+
+const deriveIdentityId = (idNumber) => {
+  return keccak256(toUtf8Bytes(idNumber.trim()));
+};
+
 
 // 1. Base64-URL → normal Base64 (same as mobile)
 const fromBase64Url = (str) => {
@@ -11,10 +22,24 @@ const fromBase64Url = (str) => {
   return str;
 };
 
-// 2. Main Component
+// 2. RSA Decryption using node-forge PKCS#1 v1.5
+const decryptWithRSA_PKCS1 = (encryptedBase64, privateKeyPem) => {
+  try {
+    const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
+    const encryptedBytes = forge.util.decode64(encryptedBase64);
+    const decrypted = privateKey.decrypt(encryptedBytes, 'RSAES-PKCS1-V1_5');
+    return decrypted;
+  } catch (err) {
+    console.error('PKCS#1 Decrypt Error:', err);
+    throw new Error('Decryption failed. Check your private key.');
+  }
+};
+
+// 3. Main Component
 export default function Verify() {
   const [searchParams] = useSearchParams();
   const encoded = searchParams.get('data');
+  const verificationStarted = useRef(false);
 
   const [ui, setUi] = useState({
     loading: true,
@@ -30,9 +55,9 @@ export default function Verify() {
     verificationError: null,
   });
 
-  const [passkey, setPasskey] = useState('');
+  const [privateKey, setPrivateKey] = useState('');
 
-  // 3. Initial decode (plain or encrypted)
+  // 4. Initial decode (plain or encrypted with RSA)
   useEffect(() => {
     if (!encoded) {
       setUi({ loading: false, error: 'No data in QR code' });
@@ -42,6 +67,8 @@ export default function Verify() {
     let payload;
     try {
       payload = fromBase64Url(encoded);
+      
+      
     } catch {
       setUi({ loading: false, error: 'Invalid QR data (bad encoding)' });
       return;
@@ -50,13 +77,19 @@ export default function Verify() {
     // Try plain JSON
     try {
       const json = JSON.parse(atob(payload));
+      if ('licenseNumber' in json){
+      idNumber = json.licenseNumber;
+      } else {
+         idNumber = json.idNumber;
+      }
+      console.log(json.licenseNumber);
       setUi({ loading: false, plain: true, data: json });
       return;
     } catch {
-      // not plain → encrypted
+      // not plain → encrypted with RSA
     }
 
-    // Encrypted
+    // Encrypted with RSA
     setUi({
       loading: false,
       encrypted: true,
@@ -64,112 +97,113 @@ export default function Verify() {
     });
   }, [encoded]);
 
-  // 4. Decrypt handler - FIXED
-const decrypt = async () => {
-  if (!passkey) return alert('Enter the 12-character passkey');
-  if (passkey.length !== 12) return alert('Passkey must be exactly 12 characters');
 
-  setUi((s) => ({ ...s, decrypting: true }));
 
-  try {
-    // Step 1: Reconstruct the CryptoJS ciphertext from Base64URL
-    let ciphertextBase64 = ui.payload; // This is already base64url-encoded string from QR
-    ciphertextBase64 = ciphertextBase64.replace(/-/g, '+').replace(/_/g, '/');
-    while (ciphertextBase64.length % 4) ciphertextBase64 += '=';
+  // 5. RSA Decrypt handler
+  const decrypt = async () => {
+    if (!privateKey) return alert('Enter your private key');
 
-    // Step 2: This is the CRITICAL FIX
-    // The mobile app did: btoa(CryptoJS.encrypt(...).toString())
-    // So we need to undo that: atob() → then feed into CryptoJS
-    const encryptedBase64 = atob(ciphertextBase64); // Now we have CryptoJS's .toString() output
+    setUi((s) => ({ ...s, decrypting: true }));
 
-    // Step 3: Use CryptoJS to parse and decrypt
-    const key = CryptoJS.enc.Utf8.parse(passkey.padEnd(16, '0'));
-    const decrypted = CryptoJS.AES.decrypt(encryptedBase64, key, {
-      mode: CryptoJS.mode.ECB,
-      padding: CryptoJS.pad.Pkcs7,
-    });
+    try {
+      const decryptedJson = decryptWithRSA_PKCS1(ui.payload, privateKey);
+      const data = JSON.parse(decryptedJson);
 
-    const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
-    if (!jsonString) throw new Error('Decryption failed or wrong passkey');
-
-    const data = JSON.parse(jsonString);
-    console.log('Decrypted data:', data);
-
-    setUi((prev) => ({
-      ...prev,
-      data,
-      decrypted: true,
-      encrypted: false,
-      decrypting: false,
-      isValid: null,
-      verificationError: null,
-    }));
-  } catch (err) {
-    console.error('Decryption error:', err);
-    alert('Wrong passkey – try again');
-    setUi((s) => ({ ...s, decrypting: false }));
-  }
-};
-  // 5. Blockchain verification function
-const verifyHashOnChain = async (hash) => {
-  try {
-    // Ensure hash has 0x prefix and is 64 hex chars
-    let cleanHash = hash.trim();
-    if (!cleanHash.startsWith('0x')) cleanHash = '0x' + cleanHash;
-    if (!/^0x[0-9a-fA-F]{64}$/.test(cleanHash)) {
-      return { isValid: false, error: 'Invalid hash format' };
+      setUi((prev) => ({
+        ...prev,
+        data,
+        decrypted: true,
+        encrypted: false,
+        decrypting: false,
+        isValid: null,
+        verificationError: null,
+      }));
+    } catch (err) {
+      console.error('Decryption error:', err);
+      alert('Wrong private key or invalid data – try again');
+      setUi((s) => ({ ...s, decrypting: false }));
     }
+  };
 
-    console.log('Verifying hash:', cleanHash);
-    const resp = await fetch(`http://localhost:3000/verify/${encodeURIComponent(cleanHash)}`);
+  // 6. Blockchain verification
+ const verifyHashOnChain = async (identityId, hash) => {
+  try {
+    const cleanHash = hash.startsWith('0x') ? hash : '0x' + hash;
+
+    const resp = await fetch(
+      `http://localhost:3000/api/verify/${identityId}/${cleanHash}`
+    );
+    console.log(cleanHash)
+
     const result = await resp.json();
-    console.log('Verification result:', result);
 
     if (resp.ok) {
-      return { isValid: !!result.exists, error: null };
+      console.log("Identity_Num: ",identityId);
+      console.log("Hash: ", hash);
+      return { isValid: result.valid, error: null };
     } else {
-      return { isValid: false, error: result.error || 'Verification failed' };
+      return { isValid: false, error: result.error };
     }
-  } catch (e) {
-    console.error('Verification error:', e);
+  } catch {
     return { isValid: false, error: 'Blockchain service unavailable' };
   }
 };
 
-  // ✅ 6. Fixed verification useEffect
+
   useEffect(() => {
-    console.log('Verification useEffect triggered:', ui.data, ui.isValid);
+  if (!ui.data) return;
+  if (verificationStarted.current) return;
 
-    // FIXED CONDITION 👇
-    if (!ui.data || ui.isValid != null) return;
+  verificationStarted.current = true;
 
-    const run = async () => {
-      try {
-        const hash = ui.data.hash;
-        console.log('Running verifyHashOnChain with:', hash);
+  const run = async () => {
+    try {
+      console.log('Starting blockchain verification');
 
-        setUi((s) => ({ ...s, verifying: true, verificationError: null }));
-        const { isValid, error } = await verifyHashOnChain(hash);
-        setUi((s) => ({
-          ...s,
-          verifying: false,
-          isValid,
-          verificationError: error,
-        }));
-      } catch (err) {
-        console.error('Verification failed:', err);
-        setUi((s) => ({
-          ...s,
-          verifying: false,
-          verificationError: err.message,
-        }));
-      }
-    };
+      setUi((s) => ({
+        ...s,
+        verifying: true,
+        verificationError: null,
+      }));
 
-    run();
-  }, [ui.data, ui.isValid]);
+      const identitySource = 'licenseNumber' in ui.data
+          ? ui.data.licenseNumber
+          : ui.data.idNumber;
 
-  // 7. UI Rendering
+      const identityId = deriveIdentityId(identitySource);
+      
+      const hash = ui.data.hash;
+
+      console.log('identityId:', identityId);
+      console.log('hash:', hash);
+
+      const { isValid, error } = await verifyHashOnChain(identityId, hash);
+
+      console.log('Verification result:', isValid, error);
+
+      setUi((s) => ({
+        ...s,
+        verifying: false,
+        isValid,
+        verificationError: error,
+      }));
+    } catch (err) {
+      console.error('Verification crashed:', err);
+      setUi((s) => ({
+        ...s,
+        verifying: false,
+        isValid: false,
+        verificationError: 'Verification failed',
+      }));
+    }
+  };
+
+  run();
+}, [ui.data]);
+
+
+
+  // 7. UI Rendering - Loading State
   if (ui.loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -179,6 +213,7 @@ const verifyHashOnChain = async (hash) => {
     );
   }
 
+  // 8. Error State
   if (ui.error) {
     return (
       <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-xl shadow-lg text-center">
@@ -190,26 +225,27 @@ const verifyHashOnChain = async (hash) => {
     );
   }
 
+  // 9. Encrypted State - RSA Decryption UI
   if (ui.encrypted) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
+      <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
         <h2 className="text-2xl font-bold text-orange-600 mb-4">Encrypted Document</h2>
-        <p className="mb-4">Enter the 12-character passkey:</p>
-
-        <input
-          type="text"
-          value={passkey}
-          onChange={(e) => setPasskey(e.target.value.toUpperCase())}
-          maxLength={12}
-          placeholder="A1B2C3D4E5F6"
-          className="w-full p-3 border border-gray-300 rounded-lg mb-3 text-center font-mono tracking-widest text-lg"
+        <p className="text-gray-600 mb-6">This document is encrypted. Enter your RSA private key to decrypt:</p>
+        
+        <textarea
+          value={privateKey}
+          onChange={(e) => setPrivateKey(e.target.value)}
+          placeholder="-----BEGIN RSA PRIVATE KEY-----
+Paste your RSA private key here...
+-----END RSA PRIVATE KEY-----"
+          className="w-full p-3 border border-gray-300 rounded-lg mb-4 font-mono text-sm h-48 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           autoFocus
         />
-
+        
         <button
           onClick={decrypt}
           disabled={ui.decrypting}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-70 font-medium"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-70 font-medium transition-all shadow-lg"
         >
           {ui.decrypting ? 'Decrypting…' : 'Decrypt'}
         </button>
@@ -217,6 +253,7 @@ const verifyHashOnChain = async (hash) => {
     );
   }
 
+  // 10. Decrypted/Plain State - Document Display
   if (ui.plain || ui.decrypted) {
     const data = ui.data;
     const labels = {
@@ -235,6 +272,8 @@ const verifyHashOnChain = async (hash) => {
     const downloadPDF = async () => {
       const { jsPDF } = await import('jspdf');
       const doc = new jsPDF('p', 'mm', 'a4');
+      
+      // Add logo if available
       try {
         const logoResp = await fetch('/logo.png');
         const logoBlob = await logoResp.blob();
@@ -281,7 +320,7 @@ const verifyHashOnChain = async (hash) => {
       doc.setDrawColor(200);
       doc.line(20, 285, 190, 285);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 30, 292);
-      doc.save(`myvalt-verified-${Date.now()}.pdf`);
+      doc.save(`myvault-verified-${Date.now()}.pdf`);
     };
 
     return (
@@ -290,6 +329,7 @@ const verifyHashOnChain = async (hash) => {
           {'licenseNumber' in data ? 'Driving License' : 'National Identity Card'}
         </h2>
 
+        {/* Blockchain Verification Status */}
         <div
           className={`p-5 rounded-xl mb-6 text-center border-2 font-bold text-lg transition-all ${
             ui.verifying
@@ -302,12 +342,12 @@ const verifyHashOnChain = async (hash) => {
           {ui.verifying ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-blue-600 mr-2" />
-              <span>Verifying…</span>
+              <span>Verifying on blockchain…</span>
             </div>
           ) : ui.isValid ? (
-            <>Verified Document</>
+            <> Verified Document</>
           ) : (
-            <>Unverified Document</>
+            <> Unverified Document</>
           )}
         </div>
 
@@ -317,6 +357,7 @@ const verifyHashOnChain = async (hash) => {
           </p>
         )}
 
+        {/* Document Details */}
         <div className="space-y-4">
           {Object.entries(data)
             .filter(([key]) => key !== 'hash')
@@ -335,27 +376,28 @@ const verifyHashOnChain = async (hash) => {
             })}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t">
-          <button
-            onClick={downloadPDF}
-            disabled={ui.isValid === null}
-            className={`flex-1 py-3 px-6 rounded-xl font-bold  transition-all ${
-              ui.isValid === null
-                ? 'bg-blue-600 text-blue-700 cursor-not-allowed'
-                : ui.isValid
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {ui.isValid === null ? 'Verifying...' : 'Download PDF'}
-          </button>
-          <a
-            href="/"
-            className="flex-1 py-3 px-6 bg-blue-600 text-white text-center rounded-xl font-bold hover:bg-blue-700 shadow-lg"
-          >
-            Verify Another
-          </a>
-        </div>
+       {/* Action Buttons */}
+<div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t">
+  {ui.decrypted && (
+    <button
+      onClick={downloadPDF}
+      disabled={ui.isValid === null}
+      className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all ${
+        ui.isValid === null
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+      }`}
+    >
+      {ui.isValid === null ? 'Verifying...' : 'Download PDF'}
+    </button>
+  )}
+  
+   <a href="/"
+    className={`${ui.decrypted ? 'flex-1' : 'w-full'} py-3 px-6 bg-gray-600 text-white text-center rounded-xl font-bold hover:bg-gray-700 shadow-lg`}
+  >
+    Verify Another
+  </a>
+</div>
       </div>
     );
   }

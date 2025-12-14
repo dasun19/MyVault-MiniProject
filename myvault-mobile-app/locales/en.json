@@ -200,6 +200,8 @@
     "myDocumentsSubtitle": "View and manage your documents",
     "profile": "Profile",
     "profileSubtitle": "View and manage your Profile",
+    "scanVerificationRequestTitle": "Verification Requests",
+    "scanVerificationRequestSubtitle": "Manage Verification Requests",
     "keyFeatures": "Key Features of MyVault",
     "feature1Title": "Your Identity, Your Control",
     "feature1Desc": "Keep all your credentials safely on your own device — no central servers, no third-party access.",
