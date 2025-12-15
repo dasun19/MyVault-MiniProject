@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
 import { useTranslation } from 'react-i18next';
-import ipAddress from '../services/IPaddress';
+import { getServerUrl } from '../components/ApiSettings';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, "ForgotPassword">;
@@ -27,7 +27,8 @@ const ForgotPassword: React.FC<Props> = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://${ipAddress}:3000/api/auth/forgot-password`, {
+      const baseUrl = await getServerUrl();
+      const res = await fetch(`${baseUrl}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

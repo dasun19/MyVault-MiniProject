@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ipAddress from '../services/IPaddress';
+import { getServerUrl } from '../components/ApiSettings';
 import { useTranslation } from 'react-i18next'; 
 
 const CreateAccountScreen = ({ navigation }) => {
@@ -104,7 +104,8 @@ const CreateAccountScreen = ({ navigation }) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`http://${ipAddress}:3000/api/auth/register`, {
+      const baseUrl = await getServerUrl();
+      const response = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -16,7 +16,7 @@ import AppHeader from '../components/AppHeader';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTranslation } from 'react-i18next';
-import ipAddress from '../services/IPaddress';
+import { getServerUrl } from '../components/ApiSettings';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -61,8 +61,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const updateProfile = async () => {
     setUpdating(true);
     try {
+      const baseUrl = await getServerUrl();
       const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch(`http://${ipAddress}:3000/api/auth/update`, {
+      const res = await fetch(`${baseUrl}/api/auth/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -99,8 +100,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              const baseUrl = await getServerUrl();
               const token = await AsyncStorage.getItem('authToken');
-              await fetch(`http://${ipAddress}:3000/api/auth/delete`, {
+              await fetch(`${baseUrl}/api/auth/delete`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
               });

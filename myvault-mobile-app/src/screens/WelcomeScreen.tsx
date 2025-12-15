@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image, Alert} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {RootStackParamList} from '../../App';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTranslation } from 'react-i18next'; 
+import { useTranslation } from 'react-i18next';
+import { getServerUrl } from '../components/ApiSettings';
+import { User, Settings } from 'lucide-react-native';
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -12,13 +14,13 @@ type Props = {
     navigation: WelcomeScreenNavigationProp;
 }
 
-const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
-    const { t } = useTranslation(); 
+const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
+    const { t } = useTranslation();
 
     // Function to navigate to SigninScreen
     const handleSignin = async () => {
         console.log('Navigating to SigninScreen');
-        
+
         try {
             // Check if user has a valid token and security setup is complete
             const token = await AsyncStorage.getItem('authToken');
@@ -47,34 +49,42 @@ const WelcomeScreen:React.FC<Props> = ({navigation}) =>{
     };
 
     return (
-        <SafeAreaView style = {styles.container}>
-            <View style = {styles.content}>
+        <SafeAreaView style={styles.container}>
+
+            <View style={styles.content}>
 
                 {/* app logo*/}
-                <View style = {styles.logoContainer}>
-                    <Image 
-                        source = {require('../assets/images/logo.png')}
-                        style = {styles.logo}
-                        resizeMode = "contain"/>
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={require('../assets/images/logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain" />
                 </View>
 
                 {/* welcome text */}
-                <Text style = {styles.welcomeTitle}>{t('welcome.appName')}</Text>
-                <Text style = {styles.subtitle}>{t('welcome.subtitle')}</Text>
+                <Text style={styles.welcomeTitle}>{t('welcome.appName')}</Text>
+                <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
 
                 {/* Sign in button */}
-                <TouchableOpacity style = {styles.signinButton}
-                    onPress = {handleSignin}>
-                        <Text style = {styles.signinText}>{t('welcome.signIn')}</Text>
+                <TouchableOpacity style={styles.signinButton}
+                    onPress={handleSignin}>
+                    <Text style={styles.signinText}>{t('welcome.signIn')}</Text>
                 </TouchableOpacity>
 
                 {/*Create MyVault Account button */}
-                <TouchableOpacity style = {styles.signinButton}
-                    onPress = {handleCreateAccount}>
-                        <Text style = {styles.signinText}>{t('welcome.createAccount')}</Text>
+                <TouchableOpacity style={styles.signinButton}
+                    onPress={handleCreateAccount}>
+                    <Text style={styles.signinText}>{t('welcome.createAccount')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.settingsButton}
+                    onPress={() => navigation.navigate('Settings')}
+                >
+                    <Settings size={26} color="#2563eb" />
                 </TouchableOpacity>
 
             </View>
+
         </SafeAreaView>
     );
 };
@@ -127,6 +137,12 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         textAlign: 'center',
     },
+    settingsButton: {
+        position: 'absolute',
+        bottom: 25,
+        right: 25,      // change to left or center if you want
+    },
+
 });
 
 export default WelcomeScreen;

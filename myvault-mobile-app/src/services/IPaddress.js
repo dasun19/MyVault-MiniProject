@@ -1,5 +1,6 @@
 
-const ipAddress = "10.25.232.233";
+// // In ANY screen with API calls
+// import { getServerUrl } from '../components/ApiSettings';
 
-export default ipAddress;
+// export const getIpAddress = getServerUrl;
    

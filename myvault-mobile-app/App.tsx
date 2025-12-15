@@ -20,6 +20,8 @@ import './i18n';
 import HelpSupportScreen from './src/screens/HelpSupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import { ScanVerificationRequest } from './src/screens/ScanVerificationRequest';
+import APISettings from './src/components/ApiSettings';
+
 
 export type TabParamList = {
   Home: undefined;
@@ -44,6 +46,7 @@ export type RootStackParamList = {
   ResetPasswordConfirmation: { email: string };
   ReAuthenticate: undefined;
   ScanVerificationRequest: undefined;
+  APISettings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -317,6 +320,11 @@ const App = () => {
             gestureEnabled: true,
           }}
         />
+        <Stack.Screen 
+        name="APISettings" 
+        component={APISettings}
+        options={{ title: 'Server Settings' }}
+/>
         
       </Stack.Navigator>
     </NavigationContainer>

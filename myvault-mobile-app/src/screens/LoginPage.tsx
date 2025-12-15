@@ -16,9 +16,9 @@ import ReactNativeBiometrics from 'react-native-biometrics';
 import CryptoJS from 'crypto-js';
 import { Lock, SquareAsterisk, Fingerprint } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next'; 
-import ipAddress from '../services/IPaddress';
+import { getServerUrl } from '../components/ApiSettings';
 
-const ip = ipAddress;
+
 
 type LoginMode = 'idNumber' | 'pin' | 'biometric';
 type FlowStep = 'login' | 'security-setup';
@@ -33,7 +33,8 @@ const validateToken = async (token: string | null): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch(`http://${ip}:3000/api/auth/validate-token`, {
+    const baseUrl = await getServerUrl();
+    const response = await fetch(`${baseUrl}/api/auth/validate-token`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -229,7 +230,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const endpoint = `http://${ip}:3000/api/auth/login`;
+      const baseUrl = await getServerUrl();
+      const endpoint = `${baseUrl}/api/auth/login`;
       const body = { idNumber, password };
 
       console.log('📡 Making login request to:', endpoint);
@@ -627,6 +629,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
             </Text>
           </TouchableOpacity>
+
+         
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -743,6 +747,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             {isLoading ? t('login.settingUp') : t('login.completeSetup')}
           </Text>
         </TouchableOpacity>
+        
       </View>
     </ScrollView>
   );

@@ -9,10 +9,13 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../App";
+import { User, Settings } from 'lucide-react-native';
 
 const LANGUAGE_KEY = '@app_language';
-
-const SettingsScreen = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { t, i18n } = useTranslation();
   const [isSinhala, setIsSinhala] = useState(i18n.language === 'si');
 
@@ -22,7 +25,7 @@ const SettingsScreen = () => {
       await i18n.changeLanguage(newLanguage);
       await AsyncStorage.setItem(LANGUAGE_KEY, newLanguage);
       setIsSinhala(!isSinhala);
-      
+
       Alert.alert(
         t('common.confirm'),
         `Language changed to ${newLanguage === 'si' ? 'Sinhala' : 'English'}`
@@ -35,7 +38,7 @@ const SettingsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('settings.title')}</Text>
-      
+
       <View style={styles.settingItem}>
         <View style={styles.settingInfo}>
           <Text style={styles.settingLabel}>{t('settings.language')}</Text>
@@ -43,7 +46,7 @@ const SettingsScreen = () => {
             {isSinhala ? t('settings.sinhala') : t('settings.english')}
           </Text>
         </View>
-        
+
         <Switch
           value={isSinhala}
           onValueChange={toggleLanguage}
@@ -51,7 +54,17 @@ const SettingsScreen = () => {
           thumbColor={isSinhala ? '#2196F3' : '#f4f3f4'}
         />
       </View>
+
+      {/* // Add this in your renderLoginStep(), after the header: */}
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => navigation.navigate('APISettings')}
+      >
+        <Settings size={26} color="#2563eb" />
+      </TouchableOpacity>
     </View>
+
+
   );
 };
 
@@ -79,6 +92,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+
   },
   settingInfo: {
     flex: 1,
@@ -93,6 +107,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  settingsButton: {
+  position: 'absolute',
+  bottom: 25,
+  right: 25,     
+},
+
 });
 
 export default SettingsScreen;
