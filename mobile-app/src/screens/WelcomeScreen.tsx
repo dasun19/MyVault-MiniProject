@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     settingsButton: {
         position: 'absolute',
         bottom: 25,
-        right: 25,      // change to left or center if you want
+        right: 25,
     },
 
 });

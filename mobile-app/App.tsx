@@ -4,11 +4,11 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginPage from './src/screens/LoginPage';
 import CreateAccount from './src/screens/CreateAccount';
 import HomeScreen from './src/screens/HomeScreen';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabs from './src/navigation/BottomTabs';
 import DocumentScreen from './src/screens/DocumentScreen';
-import ProfileScreen from './src/screens/ProfileScreen'; 
+import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { NavigatorScreenParams } from '@react-navigation/native';
 import ForgotPassword from './src/screens/ForgotPasswordScreen';
@@ -75,10 +75,10 @@ const App = () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
       const userData = await AsyncStorage.getItem('userData');
-      
+
       const authenticated = !!(token && userData);
       console.log('🔐 Auth check:', { hasToken: !!token, hasUserData: !!userData, authenticated });
-      
+
       setIsAuthenticated(authenticated);
     } catch (error) {
       console.error('❌ Auth check error:', error);
@@ -139,7 +139,7 @@ const App = () => {
         setAppState(nextAppState);
         return;
       }
-      
+
       const token = await AsyncStorage.getItem('authToken');
       const userData = await AsyncStorage.getItem('userData');
       const isCurrentlyAuthenticated = !!(token && userData);
@@ -168,7 +168,7 @@ const App = () => {
     const interval = setInterval(() => {
       checkAuthStatus();
     }, 30000); // Check every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -203,7 +203,7 @@ const App = () => {
         const token = await AsyncStorage.getItem('authToken');
         const userData = await AsyncStorage.getItem('userData');
         const isCurrentlyAuthenticated = !!(token && userData);
-        
+
         if (!isCurrentlyAuthenticated && isAuthenticated) {
           console.log('🚪 User logged out - redirecting to Welcome');
           setIsAuthenticated(false);
@@ -214,33 +214,33 @@ const App = () => {
         }
       }}
     >
-      <Stack.Navigator 
+      <Stack.Navigator
         initialRouteName={isAuthenticated ? 'ReAuthenticate' : 'Welcome'}
         screenOptions={{
           animationEnabled: true,
         }}
       >
-        <Stack.Screen 
+        <Stack.Screen
           name="Welcome"
-          component={WelcomeScreen} 
-          options={{headerShown: false}}
+          component={WelcomeScreen}
+          options={{ headerShown: false }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="Login"
-          component={LoginPage} 
-          options={{headerShown: false}}
+          component={LoginPage}
+          options={{ headerShown: false }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="CreateAccount"
-          component={CreateAccount} 
-          options={{headerShown: false}}
+          component={CreateAccount}
+          options={{ headerShown: false }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="BottomTabs"
-          component={BottomTabs} 
+          component={BottomTabs}
           options={{
             headerShown: false,
             gestureEnabled: false,
@@ -248,84 +248,84 @@ const App = () => {
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="Profile"
-          component={ProfileScreen} 
-          options={{ 
+          component={ProfileScreen}
+          options={{
             headerShown: false,
-            gestureEnabled: true 
+            gestureEnabled: true
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="Settings"
-          component={SettingsScreen} 
-          options={{ 
+          component={SettingsScreen}
+          options={{
             headerShown: false,
-            gestureEnabled: true 
+            gestureEnabled: true
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="Help"
-          component={HelpSupportScreen} 
-          options={{ 
+          component={HelpSupportScreen}
+          options={{
             headerShown: false,
-            gestureEnabled: true 
+            gestureEnabled: true
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="About"
-          component={AboutScreen} 
-          options={{ 
+          component={AboutScreen}
+          options={{
             headerShown: false,
-            gestureEnabled: true 
+            gestureEnabled: true
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="ForgotPassword"
-          component={ForgotPassword} 
-          options={{ 
+          component={ForgotPassword}
+          options={{
             headerShown: false,
-            gestureEnabled: true 
+            gestureEnabled: true
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="ResetPasswordConfirmation"
-          component={ResetPasswordConfirmation} 
-          options={{ 
+          component={ResetPasswordConfirmation}
+          options={{
             headerShown: false,
-            gestureEnabled: false 
+            gestureEnabled: false
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="ReAuthenticate"
-          component={ReAuthenticateScreen} 
-          options={{ 
+          component={ReAuthenticateScreen}
+          options={{
             headerShown: false,
             gestureEnabled: false,
             animationEnabled: false
           }}
         />
 
-        <Stack.Screen 
+        <Stack.Screen
           name="ScanVerificationRequest"
-          component={ScanVerificationRequest} 
-          options={{ 
+          component={ScanVerificationRequest}
+          options={{
             headerShown: false,
             gestureEnabled: true,
           }}
         />
-        <Stack.Screen 
-        name="APISettings" 
-        component={APISettings}
-        options={{ title: 'Server Settings' }}
-/>
-        
+        <Stack.Screen
+          name="APISettings"
+          component={APISettings}
+          options={{ title: 'Server Settings' }}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

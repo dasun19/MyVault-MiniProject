@@ -6,13 +6,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
-import { useTranslation } from 'react-i18next'; 
+import { useTranslation } from 'react-i18next';
 import { getServerUrl } from '../components/ApiSettings';
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPasswordConfirmation">;
 
 const ResetPasswordConfirmation: React.FC<Props> = ({ navigation, route }) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const { email } = route.params;
   const [verificationCode, setVerificationCode] = useState("");
   const [newPassword, setNewPassword] = useState("");

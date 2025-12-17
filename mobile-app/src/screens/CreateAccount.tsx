@@ -13,11 +13,11 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getServerUrl } from '../components/ApiSettings';
-import { useTranslation } from 'react-i18next'; 
+import { useTranslation } from 'react-i18next';
 
 const CreateAccountScreen = ({ navigation }) => {
-  const { t } = useTranslation(); 
-  
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     fullName: '',
     idNumber: '',
@@ -26,7 +26,7 @@ const CreateAccountScreen = ({ navigation }) => {
     password: '',
     confirmPassword: ''
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +40,7 @@ const CreateAccountScreen = ({ navigation }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -102,7 +102,7 @@ const CreateAccountScreen = ({ navigation }) => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
+
     try {
       const baseUrl = await getServerUrl();
       const response = await fetch(`${baseUrl}/api/auth/register`, {
@@ -139,8 +139,8 @@ const CreateAccountScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -171,7 +171,7 @@ const CreateAccountScreen = ({ navigation }) => {
               placeholder={t('createAccount.idNumberPlaceholder')}
               value={formData.idNumber}
               onChangeText={(text) => handleChange('idNumber', text)}
-              keyboardType="default"  
+              keyboardType="default"
               autoCapitalize="characters"
             />
             {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
@@ -195,7 +195,7 @@ const CreateAccountScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>{t('createAccount.phoneNumber')}</Text>
             <View style={styles.phoneContainer}>
-              <Picker 
+              <Picker
                 selectedValue={countryCode}
                 style={styles.picker}
                 onValueChange={(itemValue) => setCountryCode(itemValue)}
