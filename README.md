@@ -1,277 +1,123 @@
-# MyVault-MiniProject  
-Blockchain-Based Digital Identity & Document Verification System  
+# MyVault – Digital Identity & Document Verification
 
-## Table of Contents  
-- [Project Overview](#project-overview)  
-- [Features](#features)  
-- [Architecture & Tech Stack](#architecture--tech-stack)  
-- [Folder Structure](#folder-structure)  
-- [Getting Started](#getting-started)  
-  - [Prerequisites](#prerequisites)  
-  - [Installation](#installation)  
-  - [Running the Applications](#running-the-applications)  
-- [Deployment](#deployment)  
-- [Usage](#usage)  
-- [Contributing](#contributing)  
-- [License](#license)  
-- [Contact](#contact)  
+MyVault is a **privacy-first digital identity and document verification system** built using **blockchain technology**.  
+It allows citizens to store digital credentials on their mobile devices while enabling verifiers to confirm authenticity **without accessing personal data**.
 
 ---
 
-## Project Overview  
-**MyVault** is a privacy-first digital identity platform that leverages blockchain to enable secure and verifiable document authentication without central data storage.  
-
-Citizens store verifiable credentials (like digital driver's licences or exam result sheets) locally on their devices, while only a cryptographic hash of the credential is stored on the blockchain by the authority.  
-Verification happens by recomputing the hash and matching it with the stored on-chain value — ensuring privacy, security, and authenticity.  
-
-### 🎯 Objectives  
-- Protect citizen data with decentralized verification  
-- Eliminate paper-based verification  
-- Enable verifiers to confirm authenticity without accessing personal data  
+## ✨ Key Idea (Simple)
+- Citizen keeps documents on their own device  
+- Government/authority stores **only a hash** on blockchain  
+- Verifier checks authenticity by matching hashes  
+- No central storage, no data leaks
 
 ---
 
-## Features  
-- 🔐 **Decentralized Credential Verification** — hashes stored on blockchain  
-- 📱 **Mobile App** — React Native app for storing & showing credentials  
-- 🌐 **Web Verification Portal** — simple verifier interface (Live on Vercel)  
-- ⚙️ **Blockchain Smart Contract** — stores and verifies document hashes  
-- 🧾 **Node.js Backend** — handles credential issuance and verification logic  
-- 🧱 **Local Development Blockchain** (Hardhat)  
-- 🚀 **CI/CD Pipeline** — automated deployment via GitHub Actions  
-- 🪶 Lightweight, privacy-first design  
+## 🚀 Features
+- Blockchain-based tamper-proof verification  
+- React Native mobile app for citizens  
+- Web verification app for authorities/verifiers  
+- Node.js backend with smart contract interaction  
+- Local Ethereum blockchain using Hardhat  
+- CI/CD deployment for verification web app (Vercel)
 
-**🌐 Live Demo:** [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/)
+**Live Verification App:** https://myvault-verify.vercel.app/
 
 ---
 
-## Architecture & Tech Stack  
-**Frontend (Verifier UI):** React + Vite + TailwindCSS  
-**Mobile App (Holder):** React Native CLI (no Expo)  
-**Backend API:** Node.js + Express  
-**Blockchain:** Solidity + Hardhat (local Ethereum test node)  
-**Deployment:** Vercel (Web App)  
-**CI/CD:** GitHub Actions  
+## 🧠 Tech Stack
+- **Mobile App:** React Native CLI  
+- **Web App:** React + Vite + Tailwind CSS  
+- **Backend:** Node.js + Express  
+- **Blockchain:** Solidity + Hardhat  
+- **Deployment:** Vercel  
+- **CI/CD:** GitHub Actions  
 
 ---
 
-## Folder Structure  
+## 📁 Folder Structure
 ```
 MyVault-MiniProject/
 │
-├── myvault-backend/                  # Backend service (API + Blockchain interaction)
-│   ├── contracts/                    # Solidity smart contracts
-│   │   └── MyVault.sol               # Main smart contract
-│   ├── scripts/                      # Hardhat deployment & interaction scripts
-│   │   └── deploy.js                 # Deploy contract to local blockchain
-│   ├── artifacts/                    # Auto-generated contract artifacts (after compile)
-│   ├── cache/                        # Hardhat cache
-│   ├── server.js                     # Express server entry point
-│   ├── package.json
-│   └── hardhat.config.cjs            # Hardhat config file
+├── myvault-backend/          # Backend + Blockchain
+│   ├── contracts/           # Solidity smart contracts
+│   ├── scripts/             # Hardhat deploy scripts
+│   ├── server.js            # Backend entry point
+│   └── hardhat.config.cjs
 │
-├── verification-webapp/              # Web app for verifying documents
+├── verification-webapp/     # Web app for verification
 │   ├── src/
-│   │   ├── pages/
-│   │   │   └── Verify.jsx            # Verification page logic
-│   │   ├── components/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── public/
-│   ├── vite.config.js
 │   └── package.json
 │
-├── myvault-mobile-app/               # React Native mobile application
-│   ├── android/                      # Android project files
-│   ├── ios/                          # iOS project files
-│   ├── src/
-│   │   ├── screens/
-│   │   ├── components/
-│   │   ├── utils/
-│   │   └── App.js
-│   ├── package.json
-│   └── metro.config.js
+├── myvault-mobile-app/      # React Native mobile app
+│   ├── android/
+│   ├── ios/
+│   └── src/
 │
-├── .github/
-│   └── workflows/
-│       └── deploy.yml                # CI/CD pipeline configuration
-│
-└── README.md                         # Project documentation
+├── .github/workflows/       # CI/CD pipeline
+└── README.md
 ```
 
 ---
 
-## Getting Started  
+## 🛠️ Setup & Run (Quick)
 
-### Prerequisites  
-Ensure you have the following installed:  
-- [Node.js](https://nodejs.org/) (v16 or higher)  
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)  
-- [Hardhat](https://hardhat.org/)  
-- [React Native CLI](https://reactnative.dev/docs/environment-setup)  
-- [Android Studio](https://developer.android.com/studio) or Xcode (for iOS)  
-
----
-
-## Installation  
-
-Clone the repository:  
+### 1️⃣ Clone Project
 ```bash
 git clone https://github.com/dasun19/MyVault-MiniProject.git
 cd MyVault-MiniProject
 ```
 
-Install dependencies in each subproject:  
+### 2️⃣ Install Dependencies
 ```bash
-# Backend
-cd myvault-backend
-npm install
-
-# Web Verification App
-cd ../verification-webapp
-npm install
-
-# Mobile App
-cd ../myvault-mobile-app
-npm install
+cd myvault-backend && npm install
+cd ../verification-webapp && npm install
+cd ../myvault-mobile-app && npm install
 ```
 
----
-
-## Running the Applications  
-
-### 🧱 Step 1 — Run Local Blockchain  
-Open **Terminal 1**:  
+### 3️⃣ Start Blockchain
 ```bash
 cd myvault-backend
 npx hardhat node
 ```
 
-This starts a local Ethereum blockchain on `http://127.0.0.1:8545`.
-
----
-
-### ⚙️ Step 2 — Compile Smart Contracts  
-Open **Terminal 2** (still in `myvault-backend`):  
-```bash
-npm run compile
-```
-
-This compiles the Solidity contracts and generates the artifacts.
-
----
-
-### 🚀 Step 3 — Deploy Smart Contract  
-In the same **Terminal 2**, deploy the contract to the local network:  
+### 4️⃣ Deploy Smart Contract
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-This will output a deployed contract address.  
-Make sure your backend uses this address when verifying documents.
-
----
-
-### 🖥️ Step 4 — Run Backend Server  
-In **Terminal 2** (same directory):  
+### 5️⃣ Start Backend
 ```bash
 node server.js
 ```
 
-This starts the backend API, which connects to the blockchain and exposes verification endpoints.
-
----
-
-### 🌐 Step 5 — Run Web Verification App  
-Open **Terminal 3**:  
+### 6️⃣ Start Web App
 ```bash
 cd verification-webapp
 npm run dev
 ```
 
-The verifier web app should now be available (usually at `http://localhost:5173`).
-
----
-
-### 📱 Step 6 — Run Mobile App  
-
-#### For Android  
-Open **Terminal 4**:  
+### 7️⃣ Run Mobile App (Android)
 ```bash
 cd myvault-mobile-app
 npx react-native run-android
 ```
 
-Then start the Metro bundler:  
-```bash
-npx react-native start
-```
+---
 
-#### For iOS (on macOS)  
-```bash
-cd myvault-mobile-app
-npx pod-install ios
-npx react-native run-ios
-```
+## 👤 How It Works
+1. **Issuer** issues a credential → hash stored on blockchain  
+2. **Citizen** stores credential in mobile app  
+3. **Verifier** uses web app → verifies via blockchain hash  
 
 ---
 
-## Deployment  
-
-### 🚀 Web Verification App (Vercel)  
-The verification web app is deployed on Vercel with automatic CI/CD.
-
-**Live URL:** [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/)
-
-#### Manual Deployment  
-```bash
-cd verification-webapp
-npm run build
-vercel --prod
-```
-
-#### Automatic Deployment via GitHub Actions  
-Every push to the `main` branch triggers an automated deployment pipeline:
-
-1. **Build & Test** — Verification webapp is built and tested
-2. **Deploy to Vercel** — Automatically deployed to production
-3. **Status Check** — Deployment status reported in GitHub
-
-The CI/CD pipeline is configured in `.github/workflows/deploy.yml`.
-
-To set up automatic deployment:
-1. Connect your GitHub repository to Vercel
-2. Configure Vercel environment variables (if needed)
-3. Push to `main` branch to trigger deployment
+## 📜 License
+MIT License
 
 ---
 
-## Usage  
-
-1. **Issuer:** Use backend API to issue new credentials (hash stored on blockchain).  
-2. **Citizen:** Mobile app stores credential locally, shows QR for verification.  
-3. **Verifier:** Access the live web app at [https://myvault-verify.vercel.app/](https://myvault-verify.vercel.app/) or run locally — scan QR or accept credential ID → verifies by recomputing hash and checking blockchain.  
-
----
-
-## Contributing  
-Contributions are welcome!  
-1. Fork the repository  
-2. Create a feature branch:  
-   ```bash
-   git checkout -b feature/your-feature
-   ```  
-3. Commit your changes and push  
-4. Open a Pull Request  
-
----
-
-## License  
-This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
-
----
-
-## Contact  
-👤 **Developer:** Dasun  
-📍 Kalutara, Sri Lanka  
-🔗 [GitHub](https://github.com/dasun19)
+## 👨‍💻 Author
+**Dasun**  
+Kalutara, Sri Lanka  
+GitHub: https://github.com/dasun19
