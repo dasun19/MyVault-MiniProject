@@ -5,7 +5,7 @@ It allows citizens to store digital credentials on their mobile devices while en
 
 ---
 
-## ✨ Key Idea (Simple)
+## ✨ Key Idea
 - Citizen keeps documents on their own device  
 - Government/authority stores **only a hash** on blockchain  
 - Verifier checks authenticity by matching hashes  
